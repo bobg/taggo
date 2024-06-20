@@ -8,6 +8,7 @@ import (
 )
 
 type Result struct {
+	LatestCommitHasLatestVersion          bool
 	LatestCommitHasVersionTag             bool
 	LatestHash                            string
 	LatestMajor, LatestMinor, LatestPatch int
@@ -18,6 +19,8 @@ type Result struct {
 	MissingVersionPrefix                  bool
 	MissingVersionSuffix                  bool
 	Modpath                               string
+	ModpathMismatch                       bool
+	ModuleSubdir                          string
 	ModverResult                          modver.Result
 	NewMajor, NewMinor, NewPatch          int
 	NewModpath                            string
@@ -34,7 +37,11 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 	}
 
 	if r.LatestCommitHasVersionTag {
-		okf(w, quiet, "Latest commit has version tag")
+		if r.LatestCommitHasLatestVersion {
+			okf(w, quiet, "Latest commit has latest version tag")
+		} else {
+			warnf(w, "Latest commit has version tag, but it is not latest version %s", r.LatestVersion)
+		}
 	} else {
 		warnf(w, "Latest commit lacks version tag")
 
@@ -48,6 +55,10 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 				}
 			}
 		}
+	}
+
+	if r.ModpathMismatch {
+		warnf(w, "Module path %s does not agree with module subdir in repo %s", r.Modpath, r.ModuleSubdir)
 	}
 
 	if r.NoVersions {

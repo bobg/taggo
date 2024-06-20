@@ -59,6 +59,7 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 			}
 		}
 	}
+	result.ModuleSubdir = moduledir
 
 	var versionPrefix string
 	if moduledir != "" {
@@ -168,7 +169,6 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	}
 
 	result.Modpath = gomod.Module.Mod.Path
-	// xxx check modpath agrees with subdir of repodir
 
 	baseModpath, modpathSuffixVersion, hasModpathVersionSuffix := decomposeModpath(gomod.Module.Mod.Path)
 	if hasModpathVersionSuffix {
@@ -186,6 +186,13 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		result.MissingVersionSuffix = true
 	}
 
+	if moduledir != "" {
+		suffix := "/" + moduledir
+		if !strings.HasSuffix(baseModpath, suffix) {
+			result.ModpathMismatch = true
+		}
+	}
+
 	mainBranch, latestHash := detectMainBranch(remotes["origin"])
 	if mainBranch == "" {
 		for _, remoteRefs := range remotes {
@@ -197,16 +204,18 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	}
 	result.MainBranch, result.LatestHash = mainBranch, latestHash
 
-	var latestCommitHasVersionTag bool
+	var latestCommitHasVersionTag, latestCommitHasLatestVersion bool
 	if mainBranch != "" {
 		for _, hash := range versions {
 			if hash == latestHash {
-				latestCommitHasVersionTag = true // xxx check whether the latest commit has the latest tag
+				latestCommitHasVersionTag = true
+				latestCommitHasLatestVersion = versions[latestVersion] == latestHash
 				break
 			}
 		}
 	}
 	result.LatestCommitHasVersionTag = latestCommitHasVersionTag
+	result.LatestCommitHasLatestVersion = latestCommitHasLatestVersion
 
 	var (
 		newMajor, newMinor, newPatch int
