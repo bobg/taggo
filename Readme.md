@@ -14,7 +14,7 @@ go install github.com/bobg/vtag/cmd/vtag@latest
 ## Usage
 
 ```sh
-vtag [-git GIT] [-json] [-q] [[REPODIR] MODULEDIR]
+vtag [-all] [-git GIT] [-json] [-q] [-status] [REPODIR] [MODULEDIR]
 ```
 
 Vtag requires two directories:
@@ -32,6 +32,8 @@ vtag searches it and its parents for the nearest `go.mod` file
 to determine the module root.
 Vtag then searches that and _its_ parents for the nearest `.git` subdirectory
 to determine the repository root.
+If `-all` is specified,
+only the repository root is sought.
 
 If no directories are specified,
 vtag performs the same search beginning at the current directory.
@@ -40,9 +42,11 @@ Flags and their meanings are:
 
 | Flag     | Meaning                                                                                                            |
 |----------|--------------------------------------------------------------------------------------------------------------------|
+| -all     | Check all modules in the repository                                                                                |
 | -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git") |
 | -json    | Output a JSON representation of the result                                                                         |
 | -q       | Suppress all output except for warnings                                                                            |
+| -status  | Exit with status 2 if any warnings are reported                                                                    |
 
 ## Findings
 

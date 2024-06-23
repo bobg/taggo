@@ -81,15 +81,17 @@ type Result struct {
 	//
 	// Possible values are:
 	//
-	//   - "ok": the version suffix is required and present, and matches the major version of the latest version tag
-	//   - "mismatch": the version suffix does not match the major version of the latest version tag
-	//   - "missing": a version suffix is required but missing
-	//   - "unwanted": a version suffix is present but not required
+	//   - VSOK: the version suffix is required and present, and matches the major version of the latest version tag
+	//   - VSMismatch: the version suffix does not match the major version of the latest version tag
+	//   - VSMissing: a version suffix is required but missing
+	//   - VSUnwanted: a version suffix is present but not required
 	VersionSuffix VersionSuffixStatus
 }
 
+// VersionSuffixStatus is a type for the possible values of Result.VersionSuffix.
 type VersionSuffixStatus string
 
+// Possible values for Result.VersionSuffix.
 const (
 	VSOK       VersionSuffixStatus = "ok"
 	VSMismatch VersionSuffixStatus = "mismatch"
@@ -97,98 +99,107 @@ const (
 	VSUnwanted VersionSuffixStatus = "unwanted"
 )
 
-func (r Result) Describe(w io.Writer, quiet bool) {
-	infof(w, quiet, "Module path: %s", r.Modpath)
+// Describe writes a human-readable description of r to w.
+// If quiet is true, the description omits all but the warnings from the output, if any.
+// The return value is the number of warnings emitted.
+func (r Result) Describe(w io.Writer, quiet bool) int {
+	var warnings int
+
+	warnf := func(format string, args ...any) {
+		warnings++
+		showf(w, "⛔️", format, args...)
+	}
+
+	var (
+		infof = func(_ string, _ ...any) {}
+		okf   = func(_ string, _ ...any) {}
+	)
+	if !quiet {
+		infof = func(format string, args ...any) {
+			showf(w, "ℹ️", format, args...)
+		}
+		okf = func(format string, args ...any) {
+			showf(w, "✅", format, args...)
+		}
+	}
+
+	infof("Module path: %s", r.Modpath)
 	if r.VersionPrefix != "" {
-		infof(w, quiet, "Version prefix: %s (n.b., this prefix is stripped from version tags appearing in this report)", r.VersionPrefix)
+		infof("Version prefix: %s (n.b., this prefix is stripped from version tags appearing in this report)", r.VersionPrefix)
 	}
 
 	if r.DefaultBranch != "" {
-		okf(w, quiet, "Default branch: %s", r.DefaultBranch)
-		infof(w, quiet, "Latest commit hash: %s", r.LatestHash)
+		okf("Default branch: %s", r.DefaultBranch)
+		infof("Latest commit hash: %s", r.LatestHash)
 	} else {
-		warnf(w, "Could not determine default branch")
+		warnf("Could not determine default branch")
 	}
 
 	if r.LatestVersion != "" {
-		okf(w, quiet, "Latest version tag: %s", r.LatestVersion)
+		okf("Latest version tag: %s", r.LatestVersion)
 
 		if r.LatestVersionIsPrerelease {
-			warnf(w, "Latest version %s is a prerelease", r.LatestVersion)
+			warnf("Latest version %s is a prerelease", r.LatestVersion)
 		} else {
-			okf(w, quiet, "Latest version %s is not a prerelease", r.LatestVersion)
+			okf("Latest version %s is not a prerelease", r.LatestVersion)
 		}
 
 		if r.LatestVersionUnstable {
-			warnf(w, "Latest version %s is unstable", r.LatestVersion)
+			warnf("Latest version %s is unstable", r.LatestVersion)
 		} else {
-			okf(w, quiet, "Latest version %s is stable", r.LatestVersion)
+			okf("Latest version %s is stable", r.LatestVersion)
 		}
 
 		switch r.VersionSuffix {
 		case VSOK:
 			if r.LatestMajor > 1 {
-				okf(w, quiet, "Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
+				okf("Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
 			} else {
-				okf(w, quiet, "Module path %s neither needs nor has a version suffix", r.Modpath)
+				okf("Module path %s neither needs nor has a version suffix", r.Modpath)
 			}
 		case VSMismatch:
-			warnf(w, "Module path %s version suffix does not agree with latest version %s", r.Modpath, r.LatestVersion)
+			warnf("Module path %s version suffix does not agree with latest version %s", r.Modpath, r.LatestVersion)
 		case VSMissing:
-			warnf(w, "Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
+			warnf("Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
 		case VSUnwanted:
-			warnf(w, "Module path %s contains an unwanted version suffix", r.Modpath)
+			warnf("Module path %s contains an unwanted version suffix", r.Modpath)
 		}
 
 		if r.DefaultBranch != "" {
 			if r.LatestCommitHasVersionTag {
 				if r.LatestCommitHasLatestVersion {
-					okf(w, quiet, "Latest commit on the default branch has latest version tag")
+					okf("Latest commit on the default branch has latest version tag")
 				} else {
-					warnf(w, "Latest commit on the default branch has version tag, but it is not latest version %s", r.LatestVersion)
+					warnf("Latest commit on the default branch has version tag, but it is not latest version %s", r.LatestVersion)
 				}
 			} else {
-				warnf(w, "Latest commit on the default branch lacks version tag")
+				warnf("Latest commit on the default branch lacks version tag")
 
 				if r.ModverResultCode == modver.None {
-					okf(w, quiet, "Modver analysis: no new version tag required")
+					okf("Modver analysis: no new version tag required")
 				} else {
-					warnf(w, "Modver analysis: %s", r.ModverResultString)
-					warnf(w, "Recommended new version: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+					warnf("Modver analysis: %s", r.ModverResultString)
+					warnf("Recommended new version: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
 					if r.NewMajor > r.LatestMajor && r.NewMajor > 1 {
-						warnf(w, "Module path will require new version suffix /v%d", r.NewMajor)
+						warnf("Module path will require new version suffix /v%d", r.NewMajor)
 					}
 				}
 			}
 		}
 	} else {
-		warnf(w, "No version tags")
+		warnf("No version tags")
 	}
 
 	if r.ModpathMismatch {
-		warnf(w, "Module path %s does not agree with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
+		warnf("Module path %s does not agree with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
 	} else if r.ModuleSubdir != "" {
-		okf(w, quiet, "Module path %s agrees with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
-	}
-}
-
-func warnf(w io.Writer, format string, args ...any) {
-	showf(w, false, "⛔️", format, args...)
-}
-
-func okf(w io.Writer, quiet bool, format string, args ...any) {
-	showf(w, quiet, "✅", format, args...)
-}
-
-func infof(w io.Writer, quiet bool, format string, args ...any) {
-	showf(w, quiet, "ℹ️", format, args...)
-}
-
-func showf(w io.Writer, quiet bool, prefix, format string, args ...interface{}) {
-	if quiet {
-		return
+		okf("Module path %s agrees with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
 	}
 
+	return warnings
+}
+
+func showf(w io.Writer, prefix, format string, args ...interface{}) {
 	fmt.Fprint(w, prefix)
 	fmt.Fprint(w, " ")
 	fmt.Fprintf(w, format, args...)

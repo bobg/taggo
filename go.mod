@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/bobg/errors v1.1.0
 	github.com/bobg/go-generics/v3 v3.5.0
+	github.com/bobg/modules v0.1.0
 	github.com/bobg/modver/v2 v2.8.1
 	golang.org/x/mod v0.18.0
 )

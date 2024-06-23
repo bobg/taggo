@@ -13,10 +13,35 @@ import (
 
 	"github.com/bobg/errors"
 	"github.com/bobg/go-generics/v3/maps"
+	"github.com/bobg/modules"
 	"github.com/bobg/modver/v2"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
 )
+
+// CheckAll calls [Check] on each Go module in a Git repository.
+// It returns a map from module directory to the Result for that module.
+// The git argument is the path to the git executable.
+// If it is empty, [CheckAll] will look for "git" in PATH using [exec.LookPath].
+func CheckAll(ctx context.Context, git, repodir string) (map[string]Result, error) {
+	if git == "" {
+		var err error
+		git, err = exec.LookPath("git")
+		if err != nil {
+			return nil, errors.Wrap(err, "finding git binary")
+		}
+	}
+
+	result := make(map[string]Result)
+	err := modules.Each(repodir, func(moduledir string) error {
+		res, err := Check(ctx, git, repodir, moduledir)
+		if err == nil { // sic
+			result[moduledir] = res
+		}
+		return err
+	})
+	return result, err
+}
 
 // Check checks a Go module in a Git repository.
 // It returns a Result with information about the module and its repository.
