@@ -157,21 +157,22 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	}
 
 	result.Modpath = gomod.Module.Mod.Path
+	result.VersionSuffix = VSOK
 
 	baseModpath, modpathSuffixVersion, hasModpathVersionSuffix := decomposeModpath(gomod.Module.Mod.Path)
 	if hasModpathVersionSuffix {
 		switch modpathSuffixVersion {
 		case 0, 1:
-			result.UnwantedVersionSuffix = true
+			result.VersionSuffix = VSUnwanted
 
 		case latestMajor:
 			// ok, do nothing
 
 		default:
-			result.VersionSuffixMismatch = true
+			result.VersionSuffix = VSMismatch
 		}
 	} else if latestMajor > 1 {
-		result.MissingVersionSuffix = true
+		result.VersionSuffix = VSMissing
 	}
 
 	if moduledir != "" {

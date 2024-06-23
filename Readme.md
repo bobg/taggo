@@ -115,13 +115,10 @@ where N is 2 or higher,
 and the module path does not end with `/vN`.
 See [go.dev/ref/mod#major-version-suffixes](https://go.dev/ref/mod#major-version-suffixes).
 
-### ✅ Module path ... has suffix matching major version ...
+### ⛔️ Module path ... version suffix does not agree with latest version ...
 
-The module path requires a major-version suffix and has the correct one.
-
-### ✅ Module path ... neither needs nor has a version suffix
-
-The module path does not require a major-version suffix and does not have one.
+The module path has a major-version suffix
+that does not match the major version number of the latest version tag.
 
 ### ⛔️ Module path ... contains an unwanted version suffix
 
@@ -129,10 +126,13 @@ The module path should not have a major-version suffix
 (because the latest version has major version number 0 or 1)
 but has one anyway.
 
-### ⛔️ Module path ... has a version suffix that does not match the major version of latest version tag ...
+### ✅ Module path ... has suffix matching major version ...
 
-The module path has a major-version suffix
-that does not match the major version number of the latest version tag.
+The module path requires a major-version suffix and has the correct one.
+
+### ✅ Module path ... neither needs nor has a version suffix
+
+The module path does not require a major-version suffix and does not have one.
 
 ### ✅ Latest commit on the default branch has latest version tag
 

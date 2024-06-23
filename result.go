@@ -41,10 +41,6 @@ type Result struct {
 	// Valid only when LatestVersion is not empty.
 	LatestVersionUnstable bool
 
-	// MissingVersionSuffix is true if Modpath lacks a version suffix that matches the major version of the latest version tag.
-	// Valid only when LatestVersion is not empty.
-	MissingVersionSuffix bool
-
 	// Modpath is the import path of the Go module.
 	Modpath string
 
@@ -74,21 +70,32 @@ type Result struct {
 	// (in which case the recommended new version is v0.1.0).
 	NewMajor, NewMinor, NewPatch int
 
-	// UnwantedVersionSuffix is true if Modpath contains a version suffix that is not wanted
-	// (e.g., /v0 or /v1).
-	// Valid only when LatestVersion is not empty.
-	UnwantedVersionSuffix bool
-
 	// VersionPrefix is the prefix for version tags in the repository.
 	// When the root of a Go module is in subdir foo/bar of its repository,
 	// version tags must look like "foo/bar/v1.2.3";
 	// this field holds the "foo/bar/" part.
 	VersionPrefix string
 
-	// VersionSuffixMismatch is true if the version suffix of Modpath does not match the major version of the latest version tag.
+	// VersionSuffix is the status of the module path's version suffix.
 	// Valid only when LatestVersion is not empty.
-	VersionSuffixMismatch bool
+	//
+	// Possible values are:
+	//
+	//   - "ok": the version suffix is required and present, and matches the major version of the latest version tag
+	//   - "mismatch": the version suffix does not match the major version of the latest version tag
+	//   - "missing": a version suffix is required but missing
+	//   - "unwanted": a version suffix is present but not required
+	VersionSuffix VersionSuffixStatus
 }
+
+type VersionSuffixStatus string
+
+const (
+	VSOK       VersionSuffixStatus = "ok"
+	VSMismatch VersionSuffixStatus = "mismatch"
+	VSMissing  VersionSuffixStatus = "missing"
+	VSUnwanted VersionSuffixStatus = "unwanted"
+)
 
 func (r Result) Describe(w io.Writer, quiet bool) {
 	infof(w, quiet, "Module path: %s", r.Modpath)
@@ -118,20 +125,19 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 			okf(w, quiet, "Latest version %s is stable", r.LatestVersion)
 		}
 
-		if r.MissingVersionSuffix {
+		switch r.VersionSuffix {
+		case VSOK:
+			if r.LatestMajor > 1 {
+				okf(w, quiet, "Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
+			} else {
+				okf(w, quiet, "Module path %s neither needs nor has a version suffix", r.Modpath)
+			}
+		case VSMismatch:
+			warnf(w, "Module path %s version suffix does not agree with latest version %s", r.Modpath, r.LatestVersion)
+		case VSMissing:
 			warnf(w, "Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
-		} else if r.LatestMajor > 1 {
-			okf(w, quiet, "Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
-		} else {
-			okf(w, quiet, "Module path %s neither needs nor has a version suffix", r.Modpath)
-		}
-
-		if r.UnwantedVersionSuffix {
+		case VSUnwanted:
 			warnf(w, "Module path %s contains an unwanted version suffix", r.Modpath)
-		}
-
-		if r.VersionSuffixMismatch {
-			warnf(w, "Module path %s has a version suffix that does not match the major version of latest version tag %s", r.Modpath, r.LatestVersion)
 		}
 
 		if r.DefaultBranch != "" {
