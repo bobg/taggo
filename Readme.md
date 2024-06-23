@@ -1,4 +1,4 @@
-`# Vtag
+# Vtag
 
 This is vtag,
 a Go library and command
@@ -39,7 +39,7 @@ vtag performs the same search beginning at the current directory.
 Flags and their meanings are:
 
 | Flag     | Meaning                                                                                                            |
----------------------------------------------------------------------------------------------------------------------------------
+|----------|--------------------------------------------------------------------------------------------------------------------|
 | -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git") |
 | -json    | Output a JSON representation of the result                                                                         |
 | -q       | Suppress all output except for warnings                                                                            |
