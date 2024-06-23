@@ -10,7 +10,7 @@ import (
 // Result holds the results of a call to [Check].
 type Result struct {
 	// DefaultBranch is the name of the default branch of the repository, typically "main" or "master".
-	// This is determined heuristically from the repo's remote refs.
+	// This is determined heuristically from the repository's remote refs.
 	DefaultBranch string
 
 	// LatestVersion is the highest semantic version tag in the repository.
@@ -51,11 +51,11 @@ type Result struct {
 	// ModpathMismatch is true if the trailing part of Modpath
 	// (excluding any version suffix)
 	// does not agree with ModuleSubdir.
-	// In other words, if the module is in subdir foo/bar of its repo,
+	// In other words, if the module is in subdir foo/bar of its repository,
 	// we'd expect Modpath to end with .../foo/bar.
 	ModpathMismatch bool
 
-	// ModuleSubdir is the subdir in the repo where the module lives.
+	// ModuleSubdir is the subdir in the repository where the module lives.
 	ModuleSubdir string
 
 	// ModverResultCode is the result of a call to [modver.CompareGit]
@@ -69,12 +69,10 @@ type Result struct {
 	ModverResultString string
 
 	// NewMajor, NewMinor, NewPatch are the major, minor, and patch components of the recommended new version.
-	// Valid only when ModverResultCode is not modver.None. xxx
+	// Valid when DefaultBranch is not empty and LatestCommitHasVersionTag is false,
+	// or when there are not yet any version tags
+	// (in which case the recommended new version is v0.1.0).
 	NewMajor, NewMinor, NewPatch int
-
-	// NewModpath is the recommended new module path.
-	// Valid only when ModverResultCode is not modver.None. xxx
-	NewModpath string
 
 	// UnwantedVersionSuffix is true if Modpath contains a version suffix that is not wanted
 	// (e.g., /v0 or /v1).
@@ -128,21 +126,32 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 			okf(w, quiet, "Module path %s neither needs nor has a version suffix", r.Modpath)
 		}
 
+		if r.UnwantedVersionSuffix {
+			warnf(w, "Module path %s contains an unwanted version suffix", r.Modpath)
+		}
+
+		if r.VersionSuffixMismatch {
+			warnf(w, "Module path %s has a version suffix that does not match the major version of latest version tag %s", r.Modpath, r.LatestVersion)
+		}
+
 		if r.DefaultBranch != "" {
 			if r.LatestCommitHasVersionTag {
 				if r.LatestCommitHasLatestVersion {
-					okf(w, quiet, "Latest commit has latest version tag")
+					okf(w, quiet, "Latest commit on the default branch has latest version tag")
 				} else {
-					warnf(w, "Latest commit has version tag, but it is not latest version %s", r.LatestVersion)
+					warnf(w, "Latest commit on the default branch has version tag, but it is not latest version %s", r.LatestVersion)
 				}
 			} else {
-				warnf(w, "Latest commit lacks version tag")
+				warnf(w, "Latest commit on the default branch lacks version tag")
 
 				if r.ModverResultCode == modver.None {
-					okf(w, quiet, "No version change required")
+					okf(w, quiet, "Modver analysis: no new version tag required")
 				} else {
 					warnf(w, "Modver analysis: %s", r.ModverResultString)
-					warnf(w, "Recommended new version: v%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
+					warnf(w, "Recommended new version: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+					if r.NewMajor > r.LatestMajor && r.NewMajor > 1 {
+						warnf(w, "Module path will require new version suffix /v%d", r.NewMajor)
+					}
 				}
 			}
 		}
@@ -151,23 +160,9 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 	}
 
 	if r.ModpathMismatch {
-		warnf(w, "Module path %s does not agree with module subdir in repo %s", r.Modpath, r.ModuleSubdir)
+		warnf(w, "Module path %s does not agree with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
 	} else if r.ModuleSubdir != "" {
-		okf(w, quiet, "Module path %s agrees with module subdir in repo %s", r.Modpath, r.ModuleSubdir)
-	} else {
-		okf(w, quiet, "Module is at repo root, no module path match required")
-	}
-
-	if r.NewModpath != "" && r.NewModpath != r.Modpath {
-		warnf(w, "Recommended new module path: %s", r.NewModpath)
-	}
-
-	if r.UnwantedVersionSuffix {
-		warnf(w, "Module path %s contains an unwanted version suffix", r.Modpath)
-	}
-
-	if r.VersionSuffixMismatch {
-		warnf(w, "Module path %s has a version suffix that does not match the major version of latest version tag %s", r.Modpath, r.LatestVersion)
+		okf(w, quiet, "Module path %s agrees with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
 	}
 }
 

@@ -44,7 +44,10 @@ func run() error {
 	case 2:
 		repodir, moduledir = flag.Arg(0), flag.Arg(1)
 	default:
-		return fmt.Errorf("Usage: %s [-json] [-git PATH] [-q] [REPODIR [MODULEDIR]]", os.Args[0])
+		return fmt.Errorf("usage: %s [-git PATH] [-json] [-q] [[REPODIR] MODULEDIR]", os.Args[0])
+	}
+	if err != nil {
+		return errors.Wrap(err, "determining directories")
 	}
 
 	ctx := context.Background()

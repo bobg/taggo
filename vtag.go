@@ -205,47 +205,43 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	result.LatestCommitHasVersionTag = latestCommitHasVersionTag
 	result.LatestCommitHasLatestVersion = latestCommitHasLatestVersion
 
-	var (
-		newMajor, newMinor, newPatch int
-		newModpath                   string
-	)
+	var newMajor, newMinor, newPatch int
 
-	if latestVersion != "" && defaultBranch != "" && !latestCommitHasVersionTag {
-		newMajor, newMinor, newPatch = latestMajor, latestMinor, latestPatch
-		newModpath = baseModpath
-		if latestMajor > 1 {
-			newModpath += fmt.Sprintf("/v%d", latestMajor)
-		}
+	if latestVersion != "" {
+		if defaultBranch != "" && !latestCommitHasVersionTag {
+			latestVersionWithPrefix := versionPrefix + latestVersion
 
-		ctx = modver.WithGit(ctx, git)
+			newMajor, newMinor, newPatch = latestMajor, latestMinor, latestPatch
 
-		dotgitdir := filepath.Join(repodir, ".git")
-		modverResult, err := modver.CompareGit(ctx, dotgitdir, latestVersion, defaultBranch)
-		if err != nil {
-			return result, errors.Wrapf(err, "comparing %s to %s", latestVersion, defaultBranch)
-		}
-		result.ModverResultCode = modverResult.Code()
-		result.ModverResultString = modverResult.String()
+			ctx = modver.WithGit(ctx, git)
 
-		switch modverResult.Code() {
-		case modver.Major:
-			newMajor, newMinor, newPatch = latestMajor+1, 0, 0
-			if newMajor > 1 {
-				newModpath = fmt.Sprintf("%s/v%d", baseModpath, newMajor)
+			dotgitdir := filepath.Join(repodir, ".git")
+			modverResult, err := modver.CompareGit(ctx, dotgitdir, latestVersionWithPrefix, defaultBranch)
+			if err != nil {
+				return result, errors.Wrapf(err, "comparing %s to %s", latestVersionWithPrefix, defaultBranch)
 			}
+			result.ModverResultCode = modverResult.Code()
+			result.ModverResultString = modverResult.String()
 
-		case modver.Minor:
-			newMajor, newMinor, newPatch = latestMajor, latestMinor+1, 0
+			switch modverResult.Code() {
+			case modver.Major:
+				newMajor, newMinor, newPatch = latestMajor+1, 0, 0
 
-		case modver.Patchlevel:
-			// xxx if prerelease, recommend same version without prerelease tag
-			newMajor, newMinor, newPatch = latestMajor, latestMinor, latestPatch+1
+			case modver.Minor:
+				newMajor, newMinor, newPatch = latestMajor, latestMinor+1, 0
+
+			case modver.Patchlevel:
+				if !latestVersionIsPrerelease {
+					newPatch = latestPatch + 1
+				}
+			}
 		}
+	} else {
+		newMajor, newMinor, newPatch = 0, 1, 0
 	}
 	result.NewMajor = newMajor
 	result.NewMinor = newMinor
 	result.NewPatch = newPatch
-	result.NewModpath = newModpath
 
 	return result, nil
 }
@@ -254,8 +250,13 @@ func detectDefaultBranch(remoteRefs map[string]string) (name, hash string) {
 	if len(remoteRefs) == 0 {
 		return "", ""
 	}
+
 	headHash, ok := remoteRefs["HEAD"]
 	if !ok {
+		if len(remoteRefs) == 1 {
+			keys := maps.Keys(remoteRefs)
+			return keys[0], remoteRefs[keys[0]]
+		}
 		return "", ""
 	}
 
