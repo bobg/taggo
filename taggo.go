@@ -1,4 +1,4 @@
-package vtag
+package taggo
 
 import (
 	"context"

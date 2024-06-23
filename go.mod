@@ -1,4 +1,4 @@
-module github.com/bobg/vtag
+module github.com/bobg/taggo
 
 go 1.22.2
 

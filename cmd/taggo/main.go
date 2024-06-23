@@ -10,7 +10,7 @@ import (
 
 	"github.com/bobg/errors"
 
-	"github.com/bobg/vtag"
+	"github.com/bobg/taggo"
 )
 
 func main() {
@@ -78,7 +78,7 @@ func run() error {
 	ctx := context.Background()
 
 	if all {
-		modules, err := vtag.CheckAll(ctx, git, repodir)
+		modules, err := taggo.CheckAll(ctx, git, repodir)
 		if err != nil {
 			return errors.Wrapf(err, "checking all modules in %s", repodir)
 		}
@@ -113,7 +113,7 @@ func run() error {
 
 	}
 
-	result, err := vtag.Check(ctx, git, repodir, moduledir)
+	result, err := taggo.Check(ctx, git, repodir, moduledir)
 	if err != nil {
 		return errors.Wrapf(err, "checking module %s in repository %s", moduledir, repodir)
 	}

@@ -1,23 +1,23 @@
-# Vtag
+# Taggo
 
-This is vtag,
+This is taggo,
 a Go library and command
-that analyzes a Go module in a Git repository
-to find problems in version tags and the module path.
+that analyzes one or more Go modules in a Git repository
+to find problems in version tags and module paths.
 
 ## Installation
 
 ```sh
-go install github.com/bobg/vtag/cmd/vtag@latest
+go install github.com/bobg/taggo/cmd/taggo@latest
 ```
 
 ## Usage
 
 ```sh
-vtag [-all] [-git GIT] [-json] [-q] [-status] [REPODIR] [MODULEDIR]
+taggo [-all] [-git GIT] [-json] [-q] [-status] [REPODIR] [MODULEDIR]
 ```
 
-Vtag requires two directories:
+Taggo requires two directories:
 the root of a Git repository,
 and the root of a Go module.
 Often these are the same directory,
@@ -28,15 +28,15 @@ they are taken to be the repository root and the module root,
 in that order.
 
 If one directory is specified,
-vtag searches it and its parents for the nearest `go.mod` file
+taggo searches it and its parents for the nearest `go.mod` file
 to determine the module root.
-Vtag then searches that and _its_ parents for the nearest `.git` subdirectory
+Taggo then searches that and _its_ parents for the nearest `.git` subdirectory
 to determine the repository root.
 If `-all` is specified,
 only the repository root is sought.
 
 If no directories are specified,
-vtag performs the same search beginning at the current directory.
+taggo performs the same search beginning at the current directory.
 
 Flags and their meanings are:
 
@@ -50,7 +50,7 @@ Flags and their meanings are:
 
 ## Findings
 
-This section describes the different findings that vtag may report.
+This section describes the different findings that taggo may report.
 
 ### ℹ️ Module path: ...
 
@@ -159,7 +159,7 @@ to determine whether the differences between them require a change in the major 
 minor version number,
 or patchlevel.
 
-Vtag performs a Modver analysis between the latest version and the latest commit,
+Taggo performs a Modver analysis between the latest version and the latest commit,
 when the latest commit has no version tag.
 
 This message means that the differences in the Go module, if any, do not require a new version.
@@ -191,7 +191,7 @@ to reflect the new module path.
 
 ### ⛔️ No version tags
 
-Vtag did not find any version tags for the module
+Taggo did not find any version tags for the module
 (after removing any required version prefix).
 Some findings will not be available as a result.
 
