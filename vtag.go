@@ -19,6 +19,7 @@ import (
 )
 
 // Check checks a Go module in a Git repository.
+// It returns a Result with information about the module and its repository.
 func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) {
 	var result Result
 
@@ -53,10 +54,7 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 			}
 
 		default:
-			prefix := repodir + "/"
-			if strings.HasPrefix(moduledir, prefix) {
-				moduledir = strings.TrimPrefix(moduledir, prefix)
-			}
+			moduledir = strings.TrimPrefix(moduledir, repodir+"/")
 		}
 	}
 	result.ModuleSubdir = moduledir
@@ -103,19 +101,13 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 			}
 			tags[name] = hash
 
-			semverValid := semver.IsValid(name)
 			if versionPrefix != "" {
-				if semverValid {
-					result.MissingVersionPrefix = true
-					return nil
-				}
 				if !strings.HasPrefix(name, versionPrefix) {
 					return nil
 				}
 				name = strings.TrimPrefix(name, versionPrefix)
-				semverValid = semver.IsValid(name)
 			}
-			if semverValid {
+			if semver.IsValid(name) {
 				versions[name] = hash
 			}
 		}
@@ -123,10 +115,6 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	})
 	if err != nil {
 		return result, errors.Wrap(err, "getting refs")
-	}
-
-	if len(versions) == 0 {
-		result.NoVersions = true
 	}
 
 	var (
@@ -193,19 +181,19 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		}
 	}
 
-	mainBranch, latestHash := detectMainBranch(remotes["origin"])
-	if mainBranch == "" {
+	defaultBranch, latestHash := detectDefaultBranch(remotes["origin"])
+	if defaultBranch == "" {
 		for _, remoteRefs := range remotes {
-			mainBranch, latestHash = detectMainBranch(remoteRefs)
-			if mainBranch != "" {
+			defaultBranch, latestHash = detectDefaultBranch(remoteRefs)
+			if defaultBranch != "" {
 				break
 			}
 		}
 	}
-	result.MainBranch, result.LatestHash = mainBranch, latestHash
+	result.DefaultBranch, result.LatestHash = defaultBranch, latestHash
 
 	var latestCommitHasVersionTag, latestCommitHasLatestVersion bool
-	if mainBranch != "" {
+	if defaultBranch != "" {
 		for _, hash := range versions {
 			if hash == latestHash {
 				latestCommitHasVersionTag = true
@@ -222,7 +210,7 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		newModpath                   string
 	)
 
-	if latestVersion != "" && mainBranch != "" && !latestCommitHasVersionTag {
+	if latestVersion != "" && defaultBranch != "" && !latestCommitHasVersionTag {
 		newMajor, newMinor, newPatch = latestMajor, latestMinor, latestPatch
 		newModpath = baseModpath
 		if latestMajor > 1 {
@@ -232,11 +220,12 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		ctx = modver.WithGit(ctx, git)
 
 		dotgitdir := filepath.Join(repodir, ".git")
-		modverResult, err := modver.CompareGit(ctx, dotgitdir, latestVersion, mainBranch)
+		modverResult, err := modver.CompareGit(ctx, dotgitdir, latestVersion, defaultBranch)
 		if err != nil {
-			return result, errors.Wrapf(err, "comparing %s to %s", latestVersion, mainBranch)
+			return result, errors.Wrapf(err, "comparing %s to %s", latestVersion, defaultBranch)
 		}
-		result.ModverResult = modverResult
+		result.ModverResultCode = modverResult.Code()
+		result.ModverResultString = modverResult.String()
 
 		switch modverResult.Code() {
 		case modver.Major:
@@ -249,6 +238,7 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 			newMajor, newMinor, newPatch = latestMajor, latestMinor+1, 0
 
 		case modver.Patchlevel:
+			// xxx if prerelease, recommend same version without prerelease tag
 			newMajor, newMinor, newPatch = latestMajor, latestMinor, latestPatch+1
 		}
 	}
@@ -260,7 +250,7 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	return result, nil
 }
 
-func detectMainBranch(remoteRefs map[string]string) (name, hash string) {
+func detectDefaultBranch(remoteRefs map[string]string) (name, hash string) {
 	if len(remoteRefs) == 0 {
 		return "", ""
 	}
@@ -277,7 +267,7 @@ func detectMainBranch(remoteRefs map[string]string) (name, hash string) {
 	}
 
 	for ref, hash := range remoteRefs {
-		if strings.ContainsFunc(ref, nonMainBranchRune) {
+		if strings.ContainsFunc(ref, nonDefaultBranchRune) {
 			continue
 		}
 		if hash == headHash {
@@ -288,7 +278,7 @@ func detectMainBranch(remoteRefs map[string]string) (name, hash string) {
 	return "", ""
 }
 
-func nonMainBranchRune(r rune) bool {
+func nonDefaultBranchRune(r rune) bool {
 	return !unicode.IsOneOf([]*unicode.RangeTable{unicode.Letter, unicode.Digit}, r)
 }
 

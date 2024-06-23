@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/bobg/errors"
 
@@ -30,17 +31,20 @@ func run() error {
 	flag.BoolVar(&quiet, "q", false, "quiet mode: print warnings only")
 	flag.Parse()
 
-	var repodir, moduledir string
-	repodir = "."
+	var (
+		repodir, moduledir string
+		err                error
+	)
 
-	if flag.NArg() > 0 {
-		repodir = flag.Arg(0)
-	}
-	if flag.NArg() > 1 {
-		moduledir = flag.Arg(1)
-	}
-	if flag.NArg() > 2 {
-		return fmt.Errorf("unexpected extra arguments")
+	switch flag.NArg() {
+	case 0:
+		repodir, moduledir, err = determineDirs(".")
+	case 1:
+		repodir, moduledir, err = determineDirs(flag.Arg(0))
+	case 2:
+		repodir, moduledir = flag.Arg(0), flag.Arg(1)
+	default:
+		return fmt.Errorf("Usage: %s [-json] [-git PATH] [-q] [REPODIR [MODULEDIR]]", os.Args[0])
 	}
 
 	ctx := context.Background()
@@ -60,4 +64,34 @@ func run() error {
 	result.Describe(os.Stdout, quiet)
 
 	return nil
+}
+
+func determineDirs(dir string) (repodir, moduledir string, err error) {
+	moduledir, err = searchUpwardFor(dir, "go.mod")
+	if err != nil {
+		return "", "", errors.Wrap(err, "finding module directory")
+	}
+	repodir, err = searchUpwardFor(dir, ".git")
+	return repodir, moduledir, errors.Wrap(err, "finding repository directory")
+}
+
+func searchUpwardFor(dir, name string) (string, error) {
+	for {
+		path := filepath.Join(dir, name)
+		_, err := os.Stat(path)
+		if errors.Is(err, os.ErrNotExist) {
+			if dir == "/" {
+				return "", fmt.Errorf("no %s found", name)
+			}
+			dir, err = filepath.Abs(filepath.Join(dir, ".."))
+			if err != nil {
+				return "", errors.Wrap(err, "finding parent directory")
+			}
+			continue
+		}
+		if err != nil {
+			return "", errors.Wrapf(err, "statting %s", path)
+		}
+		return dir, nil
+	}
 }

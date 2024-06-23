@@ -7,75 +7,159 @@ import (
 	"github.com/bobg/modver/v2"
 )
 
+// Result holds the results of a call to [Check].
 type Result struct {
-	LatestCommitHasLatestVersion          bool
-	LatestCommitHasVersionTag             bool
-	LatestHash                            string
+	// DefaultBranch is the name of the default branch of the repository, typically "main" or "master".
+	// This is determined heuristically from the repo's remote refs.
+	DefaultBranch string
+
+	// LatestVersion is the highest semantic version tag in the repository.
+	LatestVersion string
+
+	// LatestCommitHasLatestVersion is true if the latest commit on the main branch is tagged with the highest semantic version.
+	// Valid only when DefaultBranch is not empty.
+	LatestCommitHasLatestVersion bool
+
+	// LatestCommitHasVersionTag is true if the latest commit on the main branch is tagged with any semantic version.
+	// Valid only when DefaultBranch is not empty.
+	LatestCommitHasVersionTag bool
+
+	// LatestHash is the hash of the latest commit on the main branch.
+	// Valid only when DefaultBranch is not empty.
+	LatestHash string
+
+	// LatestMajor, LatestMinor, LatestPatch are the major, minor, and patch components of the latest version tag.
+	// Valid only when LatestVersion is not empty.
 	LatestMajor, LatestMinor, LatestPatch int
-	LatestVersion                         string
-	LatestVersionIsPrerelease             bool
-	LatestVersionUnstable                 bool
-	MainBranch                            string
-	MissingVersionPrefix                  bool
-	MissingVersionSuffix                  bool
-	Modpath                               string
-	ModpathMismatch                       bool
-	ModuleSubdir                          string
-	ModverResult                          modver.Result
-	NewMajor, NewMinor, NewPatch          int
-	NewModpath                            string
-	NoVersions                            bool
-	UnwantedVersionSuffix                 bool
-	VersionPrefix                         string
-	VersionSuffixMismatch                 bool
+
+	// LatestVersionIsPrerelease is true if the latest version tag is a prerelease.
+	// Valid only when LatestVersion is not empty.
+	LatestVersionIsPrerelease bool
+
+	// LatestVersionUnstable is true if the latest version tag is unstable.
+	// (I.e., the major version number is 0, or it is a prerelease.)
+	// Valid only when LatestVersion is not empty.
+	LatestVersionUnstable bool
+
+	// MissingVersionSuffix is true if Modpath lacks a version suffix that matches the major version of the latest version tag.
+	// Valid only when LatestVersion is not empty.
+	MissingVersionSuffix bool
+
+	// Modpath is the import path of the Go module.
+	Modpath string
+
+	// ModpathMismatch is true if the trailing part of Modpath
+	// (excluding any version suffix)
+	// does not agree with ModuleSubdir.
+	// In other words, if the module is in subdir foo/bar of its repo,
+	// we'd expect Modpath to end with .../foo/bar.
+	ModpathMismatch bool
+
+	// ModuleSubdir is the subdir in the repo where the module lives.
+	ModuleSubdir string
+
+	// ModverResultCode is the result of a call to [modver.CompareGit]
+	// on the latest tagged version and the latest commit on the main branch,
+	// when those are different commits.
+	// Valid only when DefaultBranch is not empty and LatestCommitHasVersionTag is false.
+	ModverResultCode modver.ResultCode
+
+	// ModverResultString is the string describing the result in ModverResultCode.
+	// Valid only when DefaultBranch is not empty and LatestCommitHasVersionTag is false.
+	ModverResultString string
+
+	// NewMajor, NewMinor, NewPatch are the major, minor, and patch components of the recommended new version.
+	// Valid only when ModverResultCode is not modver.None. xxx
+	NewMajor, NewMinor, NewPatch int
+
+	// NewModpath is the recommended new module path.
+	// Valid only when ModverResultCode is not modver.None. xxx
+	NewModpath string
+
+	// UnwantedVersionSuffix is true if Modpath contains a version suffix that is not wanted
+	// (e.g., /v0 or /v1).
+	// Valid only when LatestVersion is not empty.
+	UnwantedVersionSuffix bool
+
+	// VersionPrefix is the prefix for version tags in the repository.
+	// When the root of a Go module is in subdir foo/bar of its repository,
+	// version tags must look like "foo/bar/v1.2.3";
+	// this field holds the "foo/bar/" part.
+	VersionPrefix string
+
+	// VersionSuffixMismatch is true if the version suffix of Modpath does not match the major version of the latest version tag.
+	// Valid only when LatestVersion is not empty.
+	VersionSuffixMismatch bool
 }
 
 func (r Result) Describe(w io.Writer, quiet bool) {
-	okf(w, quiet, "Module path: %s", r.Modpath)
-	if r.LatestVersion != "" {
-		okf(w, quiet, "Latest version tag: %s", r.LatestVersion)
+	infof(w, quiet, "Module path: %s", r.Modpath)
+	if r.VersionPrefix != "" {
+		infof(w, quiet, "Version prefix: %s (n.b., this prefix is stripped from version tags appearing in this report)", r.VersionPrefix)
 	}
 
-	if r.LatestCommitHasVersionTag {
-		if r.LatestCommitHasLatestVersion {
-			okf(w, quiet, "Latest commit has latest version tag")
-		} else {
-			warnf(w, "Latest commit has version tag, but it is not latest version %s", r.LatestVersion)
-		}
+	if r.DefaultBranch != "" {
+		okf(w, quiet, "Default branch: %s", r.DefaultBranch)
+		infof(w, quiet, "Latest commit hash: %s", r.LatestHash)
 	} else {
-		warnf(w, "Latest commit lacks version tag")
+		warnf(w, "Could not determine default branch")
+	}
 
-		if r.ModverResult != nil {
-			if r.ModverResult.Code() == modver.None {
-				okf(w, quiet, "No version change required")
+	if r.LatestVersion != "" {
+		okf(w, quiet, "Latest version tag: %s", r.LatestVersion)
+
+		if r.LatestVersionIsPrerelease {
+			warnf(w, "Latest version %s is a prerelease", r.LatestVersion)
+		} else {
+			okf(w, quiet, "Latest version %s is not a prerelease", r.LatestVersion)
+		}
+
+		if r.LatestVersionUnstable {
+			warnf(w, "Latest version %s is unstable", r.LatestVersion)
+		} else {
+			okf(w, quiet, "Latest version %s is stable", r.LatestVersion)
+		}
+
+		if r.MissingVersionSuffix {
+			warnf(w, "Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
+		} else if r.LatestMajor > 1 {
+			okf(w, quiet, "Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
+		} else {
+			okf(w, quiet, "Module path %s neither needs nor has a version suffix", r.Modpath)
+		}
+
+		if r.DefaultBranch != "" {
+			if r.LatestCommitHasVersionTag {
+				if r.LatestCommitHasLatestVersion {
+					okf(w, quiet, "Latest commit has latest version tag")
+				} else {
+					warnf(w, "Latest commit has version tag, but it is not latest version %s", r.LatestVersion)
+				}
 			} else {
-				warnf(w, "Recommended new version: v%d.%d.%d (based on Modver analysis: %s)", r.NewMajor, r.NewMinor, r.NewPatch, r.ModverResult)
-				if r.NewModpath != "" {
-					warnf(w, "Recommended new module path: %s", r.NewModpath)
+				warnf(w, "Latest commit lacks version tag")
+
+				if r.ModverResultCode == modver.None {
+					okf(w, quiet, "No version change required")
+				} else {
+					warnf(w, "Modver analysis: %s", r.ModverResultString)
+					warnf(w, "Recommended new version: v%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
 				}
 			}
 		}
+	} else {
+		warnf(w, "No version tags")
 	}
 
 	if r.ModpathMismatch {
 		warnf(w, "Module path %s does not agree with module subdir in repo %s", r.Modpath, r.ModuleSubdir)
+	} else if r.ModuleSubdir != "" {
+		okf(w, quiet, "Module path %s agrees with module subdir in repo %s", r.Modpath, r.ModuleSubdir)
+	} else {
+		okf(w, quiet, "Module is at repo root, no module path match required")
 	}
 
-	if r.NoVersions {
-		warnf(w, "No version tags")
-	} else {
-		if r.LatestVersionIsPrerelease {
-			warnf(w, "Latest version %s is a prerelease", r.LatestVersion)
-		}
-		if r.LatestVersionUnstable {
-			warnf(w, "Latest version %s is unstable", r.LatestVersion)
-		}
-		if r.MissingVersionPrefix {
-			warnf(w, "One or more version tags lack prefix %s", r.VersionPrefix)
-		}
-		if r.MissingVersionSuffix {
-			warnf(w, "Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
-		}
+	if r.NewModpath != "" && r.NewModpath != r.Modpath {
+		warnf(w, "Recommended new module path: %s", r.NewModpath)
 	}
 
 	if r.UnwantedVersionSuffix {
@@ -87,17 +171,25 @@ func (r Result) Describe(w io.Writer, quiet bool) {
 	}
 }
 
-func warnf(w io.Writer, format string, args ...interface{}) {
-	fmt.Fprintf(w, "⚠️ ")
-	fmt.Fprintf(w, format, args...)
-	fmt.Fprintln(w) // xxx
+func warnf(w io.Writer, format string, args ...any) {
+	showf(w, false, "⛔️", format, args...)
 }
 
-func okf(w io.Writer, quiet bool, format string, args ...interface{}) {
+func okf(w io.Writer, quiet bool, format string, args ...any) {
+	showf(w, quiet, "✅", format, args...)
+}
+
+func infof(w io.Writer, quiet bool, format string, args ...any) {
+	showf(w, quiet, "ℹ️", format, args...)
+}
+
+func showf(w io.Writer, quiet bool, prefix, format string, args ...interface{}) {
 	if quiet {
 		return
 	}
-	fmt.Fprintf(w, "✅ ")
+
+	fmt.Fprint(w, prefix)
+	fmt.Fprint(w, " ")
 	fmt.Fprintf(w, format, args...)
-	fmt.Fprintln(w) // xxx
+	fmt.Fprintln(w)
 }
