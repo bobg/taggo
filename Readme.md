@@ -120,6 +120,7 @@ either it is a prerelease,
 or the major version number is zero.
 “Unstable” means that callers have no expectation of compatibility
 between this and any other version.
+With “stable” versions, they do.
 See [go.dev/ref/mod#versions](https://go.dev/ref/mod#versions).
 
 ### ✅ Latest version ... is stable
@@ -171,7 +172,8 @@ The latest commit on the default branch does not have a version tag.
 
 ### ✅ Modver analysis: no new version tag required
 
-Modver is a tool that can compare two versions of a Go module
+[Modver](https://github.com/bobg/modver#readme)
+is a tool that can compare two versions of a Go module
 to determine whether the differences between them require a change in the major version number,
 minor version number,
 or patchlevel.
@@ -185,7 +187,7 @@ This message means that the differences in the Go module, if any, do not require
 
 This message means that Modver found some differences requiring a new version tag.
 
-### ⛔️ Recommended new version: ...
+### ⛔️ Recommended new version tag: ...
 
 If Modver found differences requiring a new version,
 this is the recommended new version tag

@@ -179,7 +179,7 @@ func (r Result) Describe(w io.Writer, quiet bool) int {
 					okf("Modver analysis: no new version tag required")
 				} else {
 					warnf("Modver analysis: %s", r.ModverResultString)
-					warnf("Recommended new version: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+					warnf("Recommended new version tag: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
 					if r.NewMajor > r.LatestMajor && r.NewMajor > 1 {
 						warnf("Module path will require new version suffix /v%d", r.NewMajor)
 					}
