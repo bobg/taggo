@@ -257,7 +257,11 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign 
 		return nil
 	}
 
-	tag := fmt.Sprintf("%sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+	bareTag := fmt.Sprintf("%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
+	if bareTag == r.LatestVersion {
+		return nil
+	}
+	tag := r.VersionPrefix + bareTag
 
 	if r.NewMajor != r.LatestMajor {
 		return exitErr{code: 3, err: fmt.Errorf("will not add new major-version tag %s", tag)}
