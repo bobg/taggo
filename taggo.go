@@ -207,23 +207,23 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		}
 	}
 
-	defaultBranch, latestHash := detectDefaultBranch(remotes["origin"])
+	defaultBranch, latestCommit := detectDefaultBranch(remotes["origin"])
 	if defaultBranch == "" {
 		for _, remoteRefs := range remotes {
-			defaultBranch, latestHash = detectDefaultBranch(remoteRefs)
+			defaultBranch, latestCommit = detectDefaultBranch(remoteRefs)
 			if defaultBranch != "" {
 				break
 			}
 		}
 	}
-	result.DefaultBranch, result.LatestHash = defaultBranch, latestHash
+	result.DefaultBranch, result.LatestCommit = defaultBranch, latestCommit
 
 	var latestCommitHasVersionTag, latestCommitHasLatestVersion bool
 	if defaultBranch != "" {
 		for _, hash := range versions {
-			if hash == latestHash {
+			if hash == latestCommit {
 				latestCommitHasVersionTag = true
-				latestCommitHasLatestVersion = versions[latestVersion] == latestHash
+				latestCommitHasLatestVersion = versions[latestVersion] == latestCommit
 				break
 			}
 		}

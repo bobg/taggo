@@ -24,9 +24,9 @@ type Result struct {
 	// Valid only when DefaultBranch is not empty.
 	LatestCommitHasVersionTag bool
 
-	// LatestHash is the hash of the latest commit on the main branch.
+	// LatestCommit is the hash of the latest commit on the main branch.
 	// Valid only when DefaultBranch is not empty.
-	LatestHash string
+	LatestCommit string
 
 	// LatestMajor, LatestMinor, LatestPatch are the major, minor, and patch components of the latest version tag.
 	// Valid only when LatestVersion is not empty.
@@ -130,7 +130,7 @@ func (r Result) Describe(w io.Writer, quiet bool) int {
 
 	if r.DefaultBranch != "" {
 		okf("Default branch: %s", r.DefaultBranch)
-		infof("Latest commit hash: %s", r.LatestHash)
+		infof("Latest commit hash: %s", r.LatestCommit)
 	} else {
 		warnf("Could not determine default branch")
 	}

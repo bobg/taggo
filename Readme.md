@@ -43,13 +43,16 @@ taggo performs the same search beginning at the current directory.
 
 Flags and their meanings are:
 
-| Flag     | Meaning                                                                                                            |
-|----------|--------------------------------------------------------------------------------------------------------------------|
-| -all     | Check all modules in the repository                                                                                |
-| -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git") |
-| -json    | Output a JSON representation of the result                                                                         |
-| -q       | Suppress all output except for warnings                                                                            |
-| -status  | Exit with status 2 if any warnings are reported                                                                    |
+| Flag     | Meaning                                                                                                             |
+|----------|---------------------------------------------------------------------------------------------------------------------|
+| -add     | Add a new version tag, if recommended. Refuses if the repository is not clean or a new major version > 1 is needed. |
+| -all     | Check all modules in the repository.                                                                                |
+| -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git"). |
+| -json    | Output a JSON representation of the result (as a [taggo.Result](https://pkg.go.dev/github.com/bobg/taggo#Result)).  |
+| -msg MSG | With -add, annotate the new tag with this message. By default it’s “Version ... added by Taggo.”                    |
+| -q       | Suppress all output except for warnings.                                                                            |
+| -s       | With -add, sign the new tag with GPG. See https://git-scm.com/docs/git-tag#Documentation/git-tag.txt--s.            |
+| -status  | Exit with status 2 if any warnings are reported.                                                                    |
 
 ## Findings
 

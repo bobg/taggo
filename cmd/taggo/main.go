@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/bobg/errors"
@@ -16,22 +19,36 @@ import (
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
+
+		var (
+			ee       exitErr
+			exitCode = 1
+		)
+		if errors.As(err, &ee) {
+			exitCode = ee.code
+		}
+		os.Exit(exitCode)
 	}
 }
 
 func run() error {
 	var (
+		add    bool
 		all    bool
 		doJSON bool
 		git    string
+		msg    string
 		quiet  bool
+		sign   bool
 		status bool
 	)
+	flag.BoolVar(&add, "add", false, "add any recommended new version tag to the repository")
 	flag.BoolVar(&all, "all", false, "check all modules in the repository")
 	flag.BoolVar(&doJSON, "json", false, "output in JSON format")
 	flag.StringVar(&git, "git", "", "path to git binary")
+	flag.StringVar(&msg, "m", "", "with -add, message for new version tag")
 	flag.BoolVar(&quiet, "q", false, "quiet mode: print warnings only")
+	flag.BoolVar(&sign, "s", false, "with -add, sign the new version tag")
 	flag.BoolVar(&status, "status", false, "exit with status 2 if there are warnings")
 	flag.Parse()
 
@@ -72,10 +89,17 @@ func run() error {
 		repodir, moduledir = flag.Arg(0), flag.Arg(1)
 
 	default:
-		return fmt.Errorf("usage: %s [-all] [-git GIT] [-json] [-q] [-status] [REPODIR] [MODULEDIR]", os.Args[0])
+		return fmt.Errorf("usage: %s [-add] [-all] [-git GIT] [-json] [-msg MSG] [-q] [-status] [REPODIR] [MODULEDIR]", os.Args[0])
 	}
 
 	ctx := context.Background()
+
+	if add {
+		// Taggo won't add tags to an unclean repo.
+		if err = checkClean(ctx, git, repodir); err != nil {
+			return errors.Wrap(err, "checking for clean repository")
+		}
+	}
 
 	if all {
 		modules, err := taggo.CheckAll(ctx, git, repodir)
@@ -93,6 +117,7 @@ func run() error {
 		var (
 			first    = true
 			warnings int
+			tagErrs  error
 		)
 
 		for mdir, result := range modules {
@@ -103,13 +128,21 @@ func run() error {
 			}
 			fmt.Printf("%s:\n\n", mdir)
 			warnings += result.Describe(os.Stdout, quiet)
+
+			if add {
+				if err := maybeAddTag(ctx, git, repodir, result, sign, msg); err != nil {
+					tagErrs = errors.Join(tagErrs, errors.Wrapf(err, "adding tag to module %s", mdir))
+				}
+			}
 		}
+
+		err = tagErrs
 
 		if status && warnings > 0 {
-			os.Exit(2)
+			err = errors.Join(err, exitErr{code: 2, err: fmt.Errorf("warnings found")})
 		}
 
-		return nil
+		return err
 
 	}
 
@@ -126,11 +159,16 @@ func run() error {
 	}
 
 	warnings := result.Describe(os.Stdout, quiet)
-	if status && warnings > 0 {
-		os.Exit(2)
+
+	if add {
+		err = maybeAddTag(ctx, git, repodir, result, sign, msg)
 	}
 
-	return nil
+	if status && warnings > 0 {
+		err = errors.Join(err, exitErr{code: 2, err: fmt.Errorf("warnings found")})
+	}
+
+	return err
 }
 
 func determineDirs(dir string) (repodir, moduledir string, err error) {
@@ -161,4 +199,114 @@ func searchUpwardFor(dir, name string) (string, error) {
 		}
 		return dir, nil
 	}
+}
+
+type exitErr struct {
+	code int
+	err  error
+}
+
+func (e exitErr) Error() string {
+	return e.err.Error()
+}
+
+func (e exitErr) Unwrap() error {
+	return e.err
+}
+
+// Code returns the exit code for this error.
+// But if this error wraps another exitErr,
+// then the result is the least common multiple of the two codes.
+func (e exitErr) Code() int {
+	var ee exitErr
+	if errors.As(e.err, &ee) {
+		return lcm(e.code, ee.Code())
+	}
+	return e.code
+}
+
+func lcm(a, b int) int {
+	return a / gcd(a, b) * b
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
+func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign bool, msg string) error {
+	if r.DefaultBranch == "" {
+		return nil
+	}
+	if r.LatestCommit == "" {
+		return nil
+	}
+	if r.LatestCommitHasVersionTag {
+		return nil
+	}
+	if r.NewMajor == 0 && r.NewMinor == 0 && r.NewPatch == 0 {
+		return nil
+	}
+
+	tag := fmt.Sprintf("%sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+
+	if r.NewMajor != r.LatestMajor && r.NewMajor > 1 {
+		return exitErr{code: 3, err: fmt.Errorf("will not add new major-version tag %s requiring code changes", tag)}
+	}
+
+	if msg == "" {
+		msg = fmt.Sprintf("Version %s added by Taggo", tag)
+	}
+
+	args := []string{"tag", "-m", msg}
+	if sign {
+		args = append(args, "-s")
+	}
+	args = append(args, tag, r.LatestCommit)
+
+	cmd := exec.CommandContext(ctx, git, args...)
+	cmd.Dir = repodir
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "running %s", cmd)
+	}
+
+	fmt.Printf("Added tag %s\n", tag)
+	return nil
+}
+
+func checkClean(ctx context.Context, git, repodir string) error {
+	clean := true
+
+	cmd := exec.CommandContext(ctx, git, "status", "--porcelain")
+	cmd.Dir = repodir
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "creating stdout pipe")
+	}
+	if err := cmd.Start(); err != nil {
+		return errors.Wrapf(err, "starting %s", cmd)
+	}
+	defer cmd.Wait()
+
+	sc := bufio.NewScanner(stdout)
+	if sc.Scan() {
+		clean = false
+		if _, err = io.Copy(io.Discard, stdout); err != nil {
+			return errors.Wrap(err, "discarding output")
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return errors.Wrapf(err, "scanning output of %s", cmd)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return errors.Wrapf(err, "waiting for %s", cmd)
+	}
+
+	if !clean {
+		return fmt.Errorf("repository is not clean")
+	}
+	return nil
 }
