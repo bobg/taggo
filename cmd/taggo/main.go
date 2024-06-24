@@ -257,7 +257,7 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign 
 		return nil
 	}
 
-	bareTag := fmt.Sprintf("%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
+	bareTag := fmt.Sprintf("v%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
 	if bareTag == r.LatestVersion {
 		return nil
 	}
