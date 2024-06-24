@@ -31,7 +31,7 @@ they are taken to be the repository root and the module root,
 in that order.
 
 If one directory is specified,
-taggo searches it and its parents for the nearest `go.mod` file
+Taggo searches it and its parents for the nearest `go.mod` file
 to determine the module root.
 Taggo then searches that and _its_ parents for the nearest `.git` subdirectory
 to determine the repository root.
@@ -39,14 +39,14 @@ If `-all` is specified,
 only the repository root is sought.
 
 If no directories are specified,
-taggo performs the same search beginning at the current directory.
+Taggo performs the same search beginning at the current directory.
 
 Flags and their meanings are:
 
 | Flag     | Meaning                                                                                                             |
 |----------|---------------------------------------------------------------------------------------------------------------------|
-| -add     | Add a new version tag, if recommended. Refuses if the repository is not clean or a new major version > 1 is needed. |
-| -all     | Check all modules in the repository.                                                                                |
+| -add     | Add a new version tag, if recommended. Refuses if the repository is not clean or a new major version is needed.     |
+| -all     | Check all Go modules in the repository.                                                                             |
 | -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git"). |
 | -json    | Output a JSON representation of the result (as a [taggo.Result](https://pkg.go.dev/github.com/bobg/taggo#Result)).  |
 | -msg MSG | With -add, annotate the new tag with this message. By default it’s “Version ... added by Taggo.”                    |
@@ -54,9 +54,17 @@ Flags and their meanings are:
 | -s       | With -add, sign the new tag with GPG. See https://git-scm.com/docs/git-tag#Documentation/git-tag.txt--s.            |
 | -status  | Exit with status 2 if any warnings are reported.                                                                    |
 
+When `-add` refuses to add a tag because it would change the major version number,
+it causes Taggo to exit with status 3.
+If combined with `-status`
+and any warnings are reported
+(which, if a new version tag is recommended, they will be),
+Taggo exits with status 6
+(the product of 2×3).
+
 ## Findings
 
-This section describes the different findings that taggo may report.
+This section describes the different findings that Taggo may report.
 
 ### ℹ️ Module path: ...
 
