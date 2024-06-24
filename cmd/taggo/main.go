@@ -57,6 +57,13 @@ func run() error {
 		err                error
 	)
 
+	if git == "" {
+		git, err = exec.LookPath("git")
+		if err != nil {
+			return errors.Wrap(err, "finding git binary")
+		}
+	}
+
 	switch flag.NArg() {
 	case 0:
 		if all {
