@@ -16,6 +16,10 @@ type Result struct {
 	// LatestVersion is the highest semantic version tag in the repository.
 	LatestVersion string
 
+	// LatestCommit is the hash of the latest commit on the main branch.
+	// Valid only when DefaultBranch is not empty.
+	LatestCommit string
+
 	// LatestCommitHasLatestVersion is true if the latest commit on the main branch is tagged with the highest semantic version.
 	// Valid only when DefaultBranch is not empty.
 	LatestCommitHasLatestVersion bool
@@ -23,10 +27,6 @@ type Result struct {
 	// LatestCommitHasVersionTag is true if the latest commit on the main branch is tagged with any semantic version.
 	// Valid only when DefaultBranch is not empty.
 	LatestCommitHasVersionTag bool
-
-	// LatestCommit is the hash of the latest commit on the main branch.
-	// Valid only when DefaultBranch is not empty.
-	LatestCommit string
 
 	// LatestMajor, LatestMinor, LatestPatch are the major, minor, and patch components of the latest version tag.
 	// Valid only when LatestVersion is not empty.

@@ -207,29 +207,37 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		}
 	}
 
-	defaultBranch, latestCommit := detectDefaultBranch(remotes["origin"])
+	defaultBranch := detectDefaultBranch(remotes["origin"])
 	if defaultBranch == "" {
 		for _, remoteRefs := range remotes {
-			defaultBranch, latestCommit = detectDefaultBranch(remoteRefs)
-			if defaultBranch != "" {
+			if defaultBranch = detectDefaultBranch(remoteRefs); defaultBranch != "" {
 				break
 			}
 		}
 	}
-	result.DefaultBranch, result.LatestCommit = defaultBranch, latestCommit
+	result.DefaultBranch = defaultBranch
 
-	var latestCommitHasVersionTag, latestCommitHasLatestVersion bool
+	var latestCommitHasVersionTag bool
+
 	if defaultBranch != "" {
-		for _, hash := range versions {
-			if hash == latestCommit {
-				latestCommitHasVersionTag = true
-				latestCommitHasLatestVersion = versions[latestVersion] == latestCommit
-				break
+		if latestCommit, ok := heads[defaultBranch]; ok {
+			latestCommitHasLatestVersion := versions[latestVersion] == latestCommit
+
+			latestCommitHasVersionTag = latestCommitHasLatestVersion
+			if !latestCommitHasVersionTag {
+				for _, h := range versions {
+					if h == latestCommit {
+						latestCommitHasVersionTag = true
+						break
+					}
+				}
 			}
+
+			result.LatestCommit = latestCommit
+			result.LatestCommitHasVersionTag = latestCommitHasVersionTag
+			result.LatestCommitHasLatestVersion = latestCommitHasLatestVersion
 		}
 	}
-	result.LatestCommitHasVersionTag = latestCommitHasVersionTag
-	result.LatestCommitHasLatestVersion = latestCommitHasLatestVersion
 
 	var newMajor, newMinor, newPatch int
 
@@ -272,25 +280,25 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	return result, nil
 }
 
-func detectDefaultBranch(remoteRefs map[string]string) (name, hash string) {
+func detectDefaultBranch(remoteRefs map[string]string) string {
 	if len(remoteRefs) == 0 {
-		return "", ""
+		return ""
 	}
 
 	headHash, ok := remoteRefs["HEAD"]
 	if !ok {
 		if len(remoteRefs) == 1 {
 			keys := maps.Keys(remoteRefs)
-			return keys[0], remoteRefs[keys[0]]
+			return keys[0]
 		}
-		return "", ""
+		return ""
 	}
 
 	if mainHash, ok := remoteRefs["main"]; ok && mainHash == headHash {
-		return "main", headHash
+		return "main"
 	}
 	if masterHash, ok := remoteRefs["master"]; ok && masterHash == headHash {
-		return "master", headHash
+		return "master"
 	}
 
 	for ref, hash := range remoteRefs {
@@ -298,11 +306,11 @@ func detectDefaultBranch(remoteRefs map[string]string) (name, hash string) {
 			continue
 		}
 		if hash == headHash {
-			return ref, headHash
+			return ref
 		}
 	}
 
-	return "", ""
+	return ""
 }
 
 func nonDefaultBranchRune(r rune) bool {
