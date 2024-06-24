@@ -1,5 +1,8 @@
 # Taggo
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/bobg/taggo.svg)](https://pkg.go.dev/github.com/bobg/taggo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bobg/taggo)](https://goreportcard.com/report/github.com/bobg/taggo)
+
 This is taggo,
 a Go library and command
 that analyzes one or more Go modules in a Git repository
@@ -61,10 +64,13 @@ The import path of the Go module.
 The prefix required for version tags on this module.
 If the module is at the repository root,
 this is empty.
-But if the module is in subdirectory foo/bar,
+But if the module is in subdirectory `foo/bar`,
 then version tags must begin with the string `foo/bar/`,
 as in `foo/bar/v1.2.3`.
 See [go.dev/ref/mod#vcs-version](https://go.dev/ref/mod#vcs-version).
+
+Taggo strips off the version prefix when reporting most of these findings,
+but includes it in “Recommended new version” (if present).
 
 ### ✅ Default branch: ...
 
