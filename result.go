@@ -21,7 +21,7 @@ type Result struct {
 	LatestCommit string
 
 	// LatestCommitHasLatestVersion is true if the latest commit on the main branch is tagged with the highest semantic version.
-	// Valid only when DefaultBranch is not empty.
+	// Valid only when DefaultBranch and LatestVersion are both non-empty.
 	LatestCommitHasLatestVersion bool
 
 	// LatestCommitHasVersionTag is true if the latest commit on the main branch is tagged with any semantic version.

@@ -6,8 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"testing"
 
+	"github.com/bobg/go-generics/v3/maps"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/bobg/taggo"
@@ -37,10 +39,10 @@ func TestCheckAll(t *testing.T) {
 			defer f.Close()
 
 			var (
-				result map[string]taggo.Result
-				dec    = json.NewDecoder(f)
+				want []taggo.Result
+				dec  = json.NewDecoder(f)
 			)
-			if err := dec.Decode(&result); err != nil {
+			if err := dec.Decode(&want); err != nil {
 				t.Fatal(err)
 			}
 
@@ -56,12 +58,15 @@ func TestCheckAll(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got, err := taggo.CheckAll(context.Background(), "", tmpdir)
+			gotMap, err := taggo.CheckAll(context.Background(), "", tmpdir)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(result, got); diff != "" {
+			got := maps.Values(gotMap)
+			sort.Slice(got, func(i, j int) bool { return got[i].ModuleSubdir < got[j].ModuleSubdir })
+
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
