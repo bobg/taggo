@@ -7,6 +7,7 @@ require (
 	github.com/bobg/go-generics/v3 v3.5.0
 	github.com/bobg/modules v0.2.0
 	github.com/bobg/modver/v2 v2.8.1
+	github.com/google/go-cmp v0.6.0
 	golang.org/x/mod v0.18.0
 )
 
