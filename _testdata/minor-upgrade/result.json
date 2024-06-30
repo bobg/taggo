@@ -1,0 +1,17 @@
+[
+  {
+    "DefaultBranch": "main",
+    "LatestCommit": "0896dd874b369a47ea33484aae5045131c1dd478",
+    "LatestVersion": "v0.1.2",
+    "LatestCommitHasLatestVersion": false,
+    "LatestCommitHasVersionTag": false,
+    "LatestMinor": 1,
+    "LatestPatch": 2,
+    "LatestVersionUnstable": true,
+    "Modpath": "x",
+    "ModverResultCode": "Minor",
+    "ModverResultString": "Minor: no object Y in old version of package x",
+    "NewMinor": 2,
+    "VersionSuffix": "ok"
+  }
+]
