@@ -1,0 +1,13 @@
+[
+  {
+    "DefaultBranch": "main",
+    "LatestCommit": "0896dd874b369a47ea33484aae5045131c1dd478",
+    "LatestVersion": "v2.0.0",
+    "LatestCommitHasLatestVersion": true,
+    "LatestCommitHasVersionTag": true,
+    "LatestMajor": 2,
+    "Modpath": "x",
+    "ModverResultCode": "None",
+    "VersionSuffix": "missing"
+  }
+]
