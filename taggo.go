@@ -121,9 +121,6 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 
 		case strings.HasPrefix(name, "refs/tags/"):
 			name = strings.TrimPrefix(name, "refs/tags/")
-			if !semver.IsValid(name) {
-				return nil
-			}
 			tags[name] = hash
 
 			if versionPrefix != "" {

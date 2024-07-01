@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/bobg/errors"
 
@@ -288,8 +289,6 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign 
 }
 
 func checkClean(ctx context.Context, git, repodir string) error {
-	clean := true
-
 	cmd := exec.CommandContext(ctx, git, "status", "--porcelain")
 	cmd.Dir = repodir
 	stdout, err := cmd.StdoutPipe()
@@ -301,8 +300,15 @@ func checkClean(ctx context.Context, git, repodir string) error {
 	}
 	defer cmd.Wait()
 
-	sc := bufio.NewScanner(stdout)
+	var (
+		clean = true
+		sc    = bufio.NewScanner(stdout)
+	)
 	if sc.Scan() {
+		line := sc.Text()
+		if strings.HasPrefix(line, "??") {
+			continue
+		}
 		clean = false
 		if _, err = io.Copy(io.Discard, stdout); err != nil {
 			return errors.Wrap(err, "discarding output")

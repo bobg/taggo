@@ -1,0 +1,27 @@
+[
+  {
+    "DefaultBranch": "main",
+    "LatestCommit": "60863384fe86df0963ec93caf6531368c6df68dd",
+    "LatestVersion": "v2.0.0",
+    "LatestMajor": 2,
+    "Modpath": "x",
+    "ModverResultCode": "None",
+    "ModverResultString": "None",
+    "NewMajor": 2,
+    "VersionSuffix": "missing"
+  },
+  {
+    "DefaultBranch": "main",
+    "LatestCommit": "60863384fe86df0963ec93caf6531368c6df68dd",
+    "LatestCommitHasLatestVersion": true,
+    "LatestCommitHasVersionTag": true,
+    "LatestMajor": 1,
+    "LatestMinor": 2,
+    "LatestPatch": 3,
+    "LatestVersion": "v1.2.3",
+    "Modpath": "x/sub",
+    "ModuleSubdir": "sub",
+    "VersionPrefix": "sub/",
+    "VersionSuffix": "ok"
+  }
+]
