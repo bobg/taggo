@@ -304,7 +304,7 @@ func checkClean(ctx context.Context, git, repodir string) error {
 		clean = true
 		sc    = bufio.NewScanner(stdout)
 	)
-	if sc.Scan() {
+	for sc.Scan() {
 		line := sc.Text()
 		if strings.HasPrefix(line, "??") {
 			continue
@@ -313,6 +313,7 @@ func checkClean(ctx context.Context, git, repodir string) error {
 		if _, err = io.Copy(io.Discard, stdout); err != nil {
 			return errors.Wrap(err, "discarding output")
 		}
+		break
 	}
 	if err := sc.Err(); err != nil {
 		return errors.Wrapf(err, "scanning output of %s", cmd)
