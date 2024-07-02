@@ -1,0 +1,8 @@
+ℹ️ Module path: x
+✅ Default branch: main
+ℹ️ Latest commit hash: 0896dd874b369a47ea33484aae5045131c1dd478
+✅ Latest version tag: v2.0.0
+✅ Latest version v2.0.0 is not a prerelease
+✅ Latest version v2.0.0 is stable
+⛔️ Module path x lacks suffix matching major version 2
+✅ Latest commit on the default branch has latest version tag

@@ -1,0 +1,6 @@
+ℹ️ Module path: x/y
+ℹ️ Version prefix: sub/ (n.b., this prefix is stripped from version tags appearing in this report)
+✅ Default branch: main
+ℹ️ Latest commit hash: 52879422b243b6fa9c2f877fe2554c3b39cde9ad
+⛔️ No version tags
+⛔️ Module path x/y does not agree with module subdir in repository sub

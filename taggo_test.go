@@ -1,12 +1,14 @@
 package taggo_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/bobg/go-generics/v3/maps"
@@ -16,6 +18,11 @@ import (
 )
 
 func TestCheckAll(t *testing.T) {
+	doUpdate := os.Getenv("UPDATE_GOLDEN") == "true"
+	if doUpdate {
+		t.Log("Will update golden files")
+	}
+
 	tests, err := os.ReadDir("_testdata")
 	if err != nil {
 		t.Fatal(err)
@@ -68,6 +75,32 @@ func TestCheckAll(t *testing.T) {
 
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			for _, result := range got {
+				goldenFile := filepath.Join(testPath, "golden")
+				if moduleSubdir := strings.ReplaceAll(result.ModuleSubdir, "/", "_"); moduleSubdir != "" {
+					goldenFile += "-" + moduleSubdir
+				}
+
+				var desc bytes.Buffer
+				result.Describe(&desc, false)
+
+				if doUpdate {
+					if err := os.WriteFile(goldenFile, desc.Bytes(), 0644); err != nil {
+						t.Fatal(err)
+					}
+					continue
+				}
+
+				want, err := os.ReadFile(goldenFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(string(want), desc.String()); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

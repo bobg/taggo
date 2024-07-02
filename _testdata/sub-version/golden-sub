@@ -1,0 +1,10 @@
+ℹ️ Module path: x/sub
+ℹ️ Version prefix: sub/ (n.b., this prefix is stripped from version tags appearing in this report)
+✅ Default branch: main
+ℹ️ Latest commit hash: 60863384fe86df0963ec93caf6531368c6df68dd
+✅ Latest version tag: v1.2.3
+✅ Latest version v1.2.3 is not a prerelease
+✅ Latest version v1.2.3 is stable
+✅ Module path x/sub neither needs nor has a version suffix
+✅ Latest commit on the default branch has latest version tag
+✅ Module path x/sub agrees with module subdir in repository sub
