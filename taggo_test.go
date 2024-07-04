@@ -18,12 +18,22 @@ import (
 )
 
 func TestCheckAll(t *testing.T) {
-	doUpdate := os.Getenv("UPDATE_GOLDEN") == "true"
+	var (
+		doUpdate  = os.Getenv("UPDATE_GOLDEN") == "true"
+		didUpdate bool
+	)
 	if doUpdate {
 		t.Log("Will update golden files")
+		defer func() {
+			if didUpdate {
+				t.Error("updated golden files")
+			} else {
+				t.Log("No golden-file updates needed")
+			}
+		}()
 	}
 
-	tests, err := os.ReadDir("_testdata")
+	tests, err := os.ReadDir("testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +44,7 @@ func TestCheckAll(t *testing.T) {
 
 		var (
 			testName = test.Name()
-			testPath = filepath.Join("_testdata", testName)
+			testPath = filepath.Join("testdata", testName)
 		)
 
 		t.Run(testName, func(t *testing.T) {
@@ -86,19 +96,19 @@ func TestCheckAll(t *testing.T) {
 				var desc bytes.Buffer
 				result.Describe(&desc, false)
 
-				if doUpdate {
-					if err := os.WriteFile(goldenFile, desc.Bytes(), 0644); err != nil {
-						t.Fatal(err)
-					}
-					continue
-				}
-
 				want, err := os.ReadFile(goldenFile)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				if diff := cmp.Diff(string(want), desc.String()); diff != "" {
+					if doUpdate {
+						if err := os.WriteFile(goldenFile, desc.Bytes(), 0644); err != nil {
+							t.Fatal(err)
+						}
+						didUpdate = true
+						continue
+					}
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}

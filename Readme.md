@@ -225,3 +225,17 @@ See [go.dev/ref/mod#module-path](https://go.dev/ref/mod#module-path).
 
 The module root is in a subdirectory of its repository,
 and the module path includes that subdirectory.
+
+## Development note
+
+The test `TestCheckAll` (in `taggo_test.go`)
+uses “golden” files
+containing the expected output of `Result.Describe`
+in various scenarios.
+
+When changing the output that that method produces,
+it is necessary also to update the golden files.
+This can be done by running `go test`
+with the environment variable `UPDATE_GOLDEN` set to `true`.
+This will cause the test to fail,
+but it should succeed on the next run.
