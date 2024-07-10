@@ -121,6 +121,14 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 
 		case strings.HasPrefix(name, "refs/tags/"):
 			name = strings.TrimPrefix(name, "refs/tags/")
+
+			// Extra step to resolve the tag's underlying commit,
+			// if it's an annotated tag.
+			hash, err := gitTagCommit(ctx, git, repodir, name)
+			if err != nil {
+				return errors.Wrapf(err, "resolving commit for tag %s", name)
+			}
+
 			tags[name] = hash
 
 			if versionPrefix != "" {

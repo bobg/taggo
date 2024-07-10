@@ -2,6 +2,7 @@ package taggo
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"os/exec"
 	"strings"
@@ -38,4 +39,15 @@ func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) err
 	}
 	err = cmd.Wait()
 	return errors.Wrapf(err, "waiting for %s", cmd)
+}
+
+func gitTagCommit(ctx context.Context, git, dir, tag string) (string, error) {
+	cmd := exec.CommandContext(ctx, git, "rev-list", "-n", "1", tag)
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", errors.Wrapf(err, "running %s", cmd)
+	}
+	output = bytes.TrimSpace(output)
+	return string(output), nil
 }
