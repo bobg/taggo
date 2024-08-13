@@ -284,7 +284,7 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign 
 		return errors.Wrapf(err, "running %s", cmd)
 	}
 
-	fmt.Printf("Added tag %s\n", tag)
+	fmt.Printf("🪄 Added tag %s\n", tag)
 	return nil
 }
 
