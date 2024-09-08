@@ -2,6 +2,8 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/bobg/taggo.svg)](https://pkg.go.dev/github.com/bobg/taggo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bobg/taggo)](https://goreportcard.com/report/github.com/bobg/taggo)
+[![Tests](https://github.com/bobg/taggo/actions/workflows/go.yml/badge.svg)](https://github.com/bobg/taggo/actions/workflows/go.yml)
+[![Coverage Status](https://coveralls.io/repos/github/bobg/taggo/badge.svg?branch=main)](https://coveralls.io/github/bobg/taggo?branch=main)
 
 This is taggo,
 a Go library and command
