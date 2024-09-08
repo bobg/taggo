@@ -71,6 +71,7 @@ func TestCheckAll(t *testing.T) {
 
 			bundlePath := filepath.Join(testPath, "bundle")
 			cmd := exec.Command("git", "clone", bundlePath, tmpdir)
+			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			if err := cmd.Run(); err != nil {
 				t.Fatal(err)
 			}
