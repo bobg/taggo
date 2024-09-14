@@ -13,6 +13,7 @@ import (
 
 	"github.com/bobg/errors"
 	"github.com/bobg/go-generics/v3/maps"
+	"github.com/bobg/go-generics/v3/set"
 	"github.com/bobg/modules"
 	"github.com/bobg/modver/v2"
 	"golang.org/x/mod/modfile"
@@ -212,10 +213,10 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 		}
 	}
 
-	defaultBranch := detectDefaultBranch(remotes["origin"])
+	defaultBranch := detectDefaultBranch(remotes["origin"], heads)
 	if defaultBranch == "" {
 		for _, remoteRefs := range remotes {
-			if defaultBranch = detectDefaultBranch(remoteRefs); defaultBranch != "" {
+			if defaultBranch = detectDefaultBranch(remoteRefs, heads); defaultBranch != "" {
 				break
 			}
 		}
@@ -285,33 +286,27 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	return result, nil
 }
 
-func detectDefaultBranch(remoteRefs map[string]string) string {
-	if len(remoteRefs) == 0 {
-		return ""
-	}
+func detectDefaultBranch(remoteRefs map[string]string, heads map[string]string) string {
+	var (
+		remoteNames = set.New(maps.Keys(remoteRefs)...)
+		headNames   = set.New(maps.Keys(heads)...)
+		candidates  = set.Intersect(remoteNames, headNames)
+	)
 
-	headHash, ok := remoteRefs["HEAD"]
-	if !ok {
-		if len(remoteRefs) == 1 {
-			keys := maps.Keys(remoteRefs)
-			return keys[0]
+	for _, name := range []string{"main", "master", "default"} {
+		if candidates.Has(name) && remoteRefs[name] == heads[name] {
+			return name
 		}
-		return ""
 	}
 
-	if mainHash, ok := remoteRefs["main"]; ok && mainHash == headHash {
-		return "main"
-	}
-	if masterHash, ok := remoteRefs["master"]; ok && masterHash == headHash {
-		return "master"
-	}
-
-	for ref, hash := range remoteRefs {
-		if strings.ContainsFunc(ref, nonDefaultBranchRune) {
-			continue
+	if len(candidates) == 1 {
+		slices := candidates.Slice()
+		name := slices[0]
+		if strings.ContainsFunc(name, nonDefaultBranchRune) {
+			return ""
 		}
-		if hash == headHash {
-			return ref
+		if remoteRefs[name] == heads[name] {
+			return name
 		}
 	}
 
