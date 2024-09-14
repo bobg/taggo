@@ -293,7 +293,7 @@ func detectDefaultBranch(remoteRefs map[string]string, heads map[string]string) 
 		candidates  = set.Intersect(remoteNames, headNames)
 	)
 
-	for _, name := range []string{"main", "master", "default"} {
+	for _, name := range []string{"main", "master", "default", "trunk"} {
 		if candidates.Has(name) && remoteRefs[name] == heads[name] {
 			return name
 		}

@@ -70,7 +70,7 @@ func TestCheckAll(t *testing.T) {
 			defer os.RemoveAll(tmpdir)
 
 			bundlePath := filepath.Join(testPath, "bundle")
-			cmd := exec.Command("git", "clone", bundlePath, tmpdir)
+			cmd := exec.Command("git", "clone", "-c", "init.defaultBranch=main", bundlePath, tmpdir)
 			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			if err := cmd.Run(); err != nil {
 				t.Fatal(err)
