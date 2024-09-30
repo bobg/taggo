@@ -286,28 +286,45 @@ func Check(ctx context.Context, git, repodir, moduledir string) (Result, error) 
 	return result, nil
 }
 
+var likelyDefaultBranchNames = []string{"main", "master", "default", "trunk"}
+
 func detectDefaultBranch(remoteRefs map[string]string, heads map[string]string) string {
 	var (
-		remoteNames = set.New(maps.Keys(remoteRefs)...)
-		headNames   = set.New(maps.Keys(heads)...)
-		candidates  = set.Intersect(remoteNames, headNames)
+		remoteNames  = set.New(maps.Keys(remoteRefs)...)
+		headNames    = set.New(maps.Keys(heads)...)
+		candidates   = set.Intersect(remoteNames, headNames)
+		okCandidates = set.New[string]()
 	)
 
-	for _, name := range []string{"main", "master", "default", "trunk"} {
-		if candidates.Has(name) && remoteRefs[name] == heads[name] {
-			return name
+	for _, name := range likelyDefaultBranchNames {
+		if candidates.Has(name) {
+			if remoteRefs[name] == heads[name] {
+				return name
+			}
+			okCandidates.Add(name)
 		}
 	}
 
 	if len(candidates) == 1 {
-		slices := candidates.Slice()
-		name := slices[0]
+		var (
+			slice = candidates.Slice()
+			name  = slice[0]
+		)
 		if strings.ContainsFunc(name, nonDefaultBranchRune) {
 			return ""
 		}
 		if remoteRefs[name] == heads[name] {
 			return name
 		}
+	}
+
+	if len(okCandidates) == 1 {
+		slice := okCandidates.Slice()
+		name := slice[0]
+		if strings.ContainsFunc(name, nonDefaultBranchRune) {
+			return ""
+		}
+		return name
 	}
 
 	return ""
