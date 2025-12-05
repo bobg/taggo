@@ -52,6 +52,7 @@ Flags and their meanings are:
 | -git GIT | The path to the `git` binary, by default the result of [exec.LookPath](https://pkg.go.dev/os/exec#LookPath)("git"). |
 | -json    | Output a JSON representation of the result (as a [taggo.Result](https://pkg.go.dev/github.com/bobg/taggo#Result)).  |
 | -msg MSG | With -add, annotate the new tag with this message. By default it’s “Version ... added by Taggo.”                    |
+| -patch   | With -add, increment the patch level even if no version bump is prescribed.                                         |
 | -q       | Suppress all output except for warnings.                                                                            |
 | -s       | With -add, sign the new tag with GPG. See https://git-scm.com/docs/git-tag#Documentation/git-tag.txt--s.            |
 | -status  | Exit with status 2 if any warnings are reported.                                                                    |
