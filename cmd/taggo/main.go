@@ -39,6 +39,7 @@ func run() error {
 		doJSON bool
 		git    string
 		msg    string
+		patch  bool
 		quiet  bool
 		sign   bool
 		status bool
@@ -48,6 +49,7 @@ func run() error {
 	flag.BoolVar(&doJSON, "json", false, "output in JSON format")
 	flag.StringVar(&git, "git", "", "path to git binary")
 	flag.StringVar(&msg, "m", "", "with -add, message for new version tag")
+	flag.BoolVar(&patch, "patch", false, "with -add, increment the patch level even if no version bump is prescribed")
 	flag.BoolVar(&quiet, "q", false, "quiet mode: print warnings only")
 	flag.BoolVar(&sign, "s", false, "with -add, sign the new version tag")
 	flag.BoolVar(&status, "status", false, "exit with status 2 if there are warnings")
@@ -138,7 +140,7 @@ func run() error {
 			warnings += result.Describe(os.Stdout, quiet)
 
 			if add {
-				if err := maybeAddTag(ctx, git, repodir, result, sign, msg); err != nil {
+				if err := maybeAddTag(ctx, git, repodir, result, sign, patch, msg); err != nil {
 					tagErrs = errors.Join(tagErrs, errors.Wrapf(err, "adding tag to module %s", mdir))
 				}
 			}
@@ -169,7 +171,7 @@ func run() error {
 	warnings := result.Describe(os.Stdout, quiet)
 
 	if add {
-		err = maybeAddTag(ctx, git, repodir, result, sign, msg)
+		err = maybeAddTag(ctx, git, repodir, result, sign, patch, msg)
 	}
 
 	if status && warnings > 0 {
@@ -244,7 +246,7 @@ func gcd(a, b int) int {
 	return a
 }
 
-func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign bool, msg string) error {
+func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign, patch bool, msg string) error {
 	if r.DefaultBranch == "" {
 		return nil
 	}
@@ -254,17 +256,23 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign 
 	if r.LatestCommitHasVersionTag {
 		return nil
 	}
-	if r.NewMajor == 0 && r.NewMinor == 0 && r.NewPatch == 0 {
-		return nil
+
+	newMajor, newMinor, newPatch := r.NewMajor, r.NewMinor, r.NewPatch
+
+	if newMajor == 0 && newMinor == 0 && newPatch == 0 {
+		if !patch {
+			return nil
+		}
+		newMajor, newMinor, newPatch = r.LatestMajor, r.LatestMinor, r.LatestPatch+1
 	}
 
-	bareTag := fmt.Sprintf("v%d.%d.%d", r.NewMajor, r.NewMinor, r.NewPatch)
+	bareTag := fmt.Sprintf("v%d.%d.%d", newMajor, newMinor, newPatch)
 	if bareTag == r.LatestVersion {
 		return nil
 	}
 	tag := r.VersionPrefix + bareTag
 
-	if r.NewMajor != r.LatestMajor {
+	if newMajor != r.LatestMajor {
 		return exitErr{code: 3, err: fmt.Errorf("will not add new major-version tag %s", tag)}
 	}
 
