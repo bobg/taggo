@@ -99,7 +99,7 @@ func run() error {
 		repodir, moduledir = flag.Arg(0), flag.Arg(1)
 
 	default:
-		return fmt.Errorf("usage: %s [-add] [-all] [-git GIT] [-json] [-msg MSG] [-q] [-status] [REPODIR] [MODULEDIR]", os.Args[0])
+		return fmt.Errorf("usage: %s [-add] [-all] [-git GIT] [-json] [-msg MSG] [-q] [-patch] [-status] [REPODIR] [MODULEDIR]", os.Args[0])
 	}
 
 	ctx := context.Background()
@@ -265,9 +265,16 @@ func maybeAddTag(ctx context.Context, git, repodir string, r taggo.Result, sign,
 		}
 		newMajor, newMinor, newPatch = r.LatestMajor, r.LatestMinor, r.LatestPatch+1
 	}
+	if newMajor == r.LatestMajor && newMinor == r.LatestMinor && newPatch == r.LatestPatch {
+		if !patch {
+			return nil
+		}
+		newPatch++
+	}
 
 	bareTag := fmt.Sprintf("v%d.%d.%d", newMajor, newMinor, newPatch)
 	if bareTag == r.LatestVersion {
+		// Redundant with the check above, but just in case.
 		return nil
 	}
 	tag := r.VersionPrefix + bareTag
