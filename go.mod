@@ -1,9 +1,9 @@
 module github.com/bobg/taggo
 
-go 1.24.0
+go 1.26
 
 require (
-	github.com/bobg/errors v1.1.0
+	github.com/bobg/errors v1.3.0
 	github.com/bobg/go-generics/v3 v3.7.0
 	github.com/bobg/modules v0.2.0
 	github.com/bobg/modver/v2 v2.12.1

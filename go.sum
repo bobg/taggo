@@ -9,8 +9,8 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFI
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuWl6zY27l47sB3qLNK6tF2fkHG55UZxx8oIVo4=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/bobg/errors v1.1.0 h1:gsVanPzJMpZQpwY+27/GQYElZez5CuMYwiIpk2A3RGw=
-github.com/bobg/errors v1.1.0/go.mod h1:Q4775qBZpnte7EGFJqmvnlB1U4pkI1XmU3qxqdp7Zcc=
+github.com/bobg/errors v1.3.0 h1:LJlNiQniZ+wm+kEwRblYYAsY3+DkW4ekPdjZF0raYfk=
+github.com/bobg/errors v1.3.0/go.mod h1:HExZHNKjrSozaLs3/X7HpryCMRBKV6SQXngfQJ9wYb8=
 github.com/bobg/go-generics/v3 v3.7.0 h1:4SJHDWqONTRcA8al6491VW/ys6061bPCcTcI7YnIHPc=
 github.com/bobg/go-generics/v3 v3.7.0/go.mod h1:wGlMLQER92clsh3cJoQjbUtUEJ03FoxnGhZjaWhf4fM=
 github.com/bobg/modules v0.2.0 h1:oL4IHaFQ/+UofKooEsY6OGAdCsjqSp9IVFGve8g9URM=
