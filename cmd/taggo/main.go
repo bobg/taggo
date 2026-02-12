@@ -21,11 +21,8 @@ func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 
-		var (
-			ee       exitErr
-			exitCode = 1
-		)
-		if errors.As(err, &ee) {
+		var exitCode = 1
+		if ee, ok := errors.AsType[exitErr](err); ok {
 			exitCode = ee.code
 		}
 		os.Exit(exitCode)
@@ -228,8 +225,7 @@ func (e exitErr) Unwrap() error {
 // But if this error wraps another exitErr,
 // then the result is the least common multiple of the two codes.
 func (e exitErr) Code() int {
-	var ee exitErr
-	if errors.As(e.err, &ee) {
+	if ee, ok := errors.AsType[exitErr](e.err); ok {
 		return lcm(e.code, ee.Code())
 	}
 	return e.code
