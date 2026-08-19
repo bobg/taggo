@@ -150,7 +150,6 @@ func run() error {
 		}
 
 		return err
-
 	}
 
 	result, err := taggo.Check(ctx, git, repodir, moduledir)
