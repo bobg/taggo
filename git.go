@@ -31,7 +31,7 @@ func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) err
 		}
 		hash, name := fields[0], fields[1]
 		if err := f(name, hash); err != nil {
-			return err
+			return errors.Wrapf(err, "processing ref %s %s", name, hash)
 		}
 	}
 	if err := sc.Err(); err != nil {

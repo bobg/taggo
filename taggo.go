@@ -39,9 +39,9 @@ func CheckAll(ctx context.Context, git, repodir string) (map[string]Result, erro
 		if err == nil { // sic
 			result[moduledir] = res
 		}
-		return err
+		return errors.Wrapf(err, "checking module in %s", moduledir)
 	})
-	return result, err
+	return result, errors.Wrap(err, "checking modules")
 }
 
 // Check checks a Go module in a Git repository.
