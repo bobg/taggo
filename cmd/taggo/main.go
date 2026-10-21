@@ -134,7 +134,11 @@ func run() error {
 				fmt.Println()
 			}
 			fmt.Printf("%s:\n\n", mdir)
-			warnings += result.Describe(os.Stdout, quiet)
+			w, err := result.Describe(os.Stdout, quiet)
+			if err != nil {
+				return errors.Wrap(err, "describing result")
+			}
+			warnings += w
 
 			if add {
 				if err := maybeAddTag(ctx, git, repodir, result, sign, patch, msg); err != nil {
@@ -164,7 +168,10 @@ func run() error {
 		return errors.Wrap(err, "encoding result")
 	}
 
-	warnings := result.Describe(os.Stdout, quiet)
+	warnings, err := result.Describe(os.Stdout, quiet)
+	if err != nil {
+		return errors.Wrap(err, "describing result")
+	}
 
 	if add {
 		err = maybeAddTag(ctx, git, repodir, result, sign, patch, msg)

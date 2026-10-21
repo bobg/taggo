@@ -102,106 +102,165 @@ const (
 // Describe writes a human-readable description of r to w.
 // If quiet is true, the description omits all but the warnings from the output, if any.
 // The return value is the number of warnings emitted.
-func (r Result) Describe(w io.Writer, quiet bool) int {
+func (r Result) Describe(w io.Writer, quiet bool) (int, error) {
 	var warnings int
 
-	warnf := func(format string, args ...any) {
+	warnf := func(format string, args ...any) error {
 		warnings++
-		showf(w, "⛔️", format, args...)
+		return showf(w, "⛔️", format, args...)
 	}
 
 	var (
-		infof = func(_ string, _ ...any) {}
-		okf   = func(_ string, _ ...any) {}
+		infof = func(_ string, _ ...any) error { return nil }
+		okf   = func(_ string, _ ...any) error { return nil }
 	)
 	if !quiet {
-		infof = func(format string, args ...any) {
-			showf(w, "ℹ️", format, args...)
+		infof = func(format string, args ...any) error {
+			return showf(w, "ℹ️", format, args...)
 		}
-		okf = func(format string, args ...any) {
-			showf(w, "✅", format, args...)
+		okf = func(format string, args ...any) error {
+			return showf(w, "✅", format, args...)
 		}
 	}
 
-	infof("Module path: %s", r.Modpath)
+	if err := infof("Module path: %s", r.Modpath); err != nil {
+		return warnings, err
+	}
 	if r.VersionPrefix != "" {
-		infof("Version prefix: %s (n.b., this prefix is stripped from version tags appearing in this report)", r.VersionPrefix)
+		if err := infof("Version prefix: %s (n.b., this prefix is stripped from version tags appearing in this report)", r.VersionPrefix); err != nil {
+			return warnings, err
+		}
 	}
 
 	if r.DefaultBranch != "" {
-		okf("Default branch: %s", r.DefaultBranch)
-		infof("Latest commit hash: %s", r.LatestCommit)
+		if err := okf("Default branch: %s", r.DefaultBranch); err != nil {
+			return warnings, err
+		}
+		if err := infof("Latest commit hash: %s", r.LatestCommit); err != nil {
+			return warnings, err
+		}
 	} else {
-		warnf("Could not determine default branch")
+		if err := warnf("Could not determine default branch"); err != nil {
+			return warnings, err
+		}
 	}
 
 	if r.LatestVersion != "" {
-		okf("Latest version tag: %s", r.LatestVersion)
+		if err := okf("Latest version tag: %s", r.LatestVersion); err != nil {
+			return warnings, err
+		}
 
 		if r.LatestVersionIsPrerelease {
-			warnf("Latest version %s is a prerelease", r.LatestVersion)
+			if err := warnf("Latest version %s is a prerelease", r.LatestVersion); err != nil {
+				return warnings, err
+			}
 		} else {
-			okf("Latest version %s is not a prerelease", r.LatestVersion)
+			if err := okf("Latest version %s is not a prerelease", r.LatestVersion); err != nil {
+				return warnings, err
+			}
 		}
 
 		if r.LatestVersionUnstable {
-			warnf("Latest version %s is unstable", r.LatestVersion)
+			if err := warnf("Latest version %s is unstable", r.LatestVersion); err != nil {
+				return warnings, err
+			}
 		} else {
-			okf("Latest version %s is stable", r.LatestVersion)
+			if err := okf("Latest version %s is stable", r.LatestVersion); err != nil {
+				return warnings, err
+			}
 		}
 
 		switch r.VersionSuffix {
 		case VSOK:
 			if r.LatestMajor > 1 {
-				okf("Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor)
+				if err := okf("Module path %s has suffix matching major version %d", r.Modpath, r.LatestMajor); err != nil {
+					return warnings, err
+				}
 			} else {
-				okf("Module path %s neither needs nor has a version suffix", r.Modpath)
+				if err := okf("Module path %s neither needs nor has a version suffix", r.Modpath); err != nil {
+					return warnings, err
+				}
 			}
 		case VSMismatch:
-			warnf("Module path %s version suffix does not agree with latest version %s", r.Modpath, r.LatestVersion)
+			if err := warnf("Module path %s version suffix does not agree with latest version %s", r.Modpath, r.LatestVersion); err != nil {
+				return warnings, err
+			}
 		case VSMissing:
-			warnf("Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor)
+			if err := warnf("Module path %s lacks suffix matching major version %d", r.Modpath, r.LatestMajor); err != nil {
+				return warnings, err
+			}
 		case VSUnwanted:
-			warnf("Module path %s contains an unwanted version suffix", r.Modpath)
+			if err := warnf("Module path %s contains an unwanted version suffix", r.Modpath); err != nil {
+				return warnings, err
+			}
 		}
 
 		if r.DefaultBranch != "" {
 			if r.LatestCommitHasVersionTag {
 				if r.LatestCommitHasLatestVersion {
-					okf("Latest commit on the default branch has latest version tag")
+					if err := okf("Latest commit on the default branch has latest version tag"); err != nil {
+						return warnings, err
+					}
 				} else {
-					warnf("Latest commit on the default branch has version tag, but it is not latest version %s", r.LatestVersion)
+					if err := warnf("Latest commit on the default branch has version tag, but it is not latest version %s", r.LatestVersion); err != nil {
+						return warnings, err
+					}
 				}
 			} else {
-				warnf("Latest commit on the default branch lacks version tag")
+				if err := warnf("Latest commit on the default branch lacks version tag"); err != nil {
+					return warnings, err
+				}
 
 				if r.ModverResultCode == modver.None {
-					okf("Modver analysis: no new version tag required")
+					if err := okf("Modver analysis: no new version tag required"); err != nil {
+						return warnings, err
+					}
 				} else {
-					warnf("Modver analysis: %s", r.ModverResultString)
-					warnf("Recommended new version tag: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch)
+					if err := warnf("Modver analysis: %s", r.ModverResultString); err != nil {
+						return warnings, err
+					}
+					if err := warnf("Recommended new version tag: %sv%d.%d.%d", r.VersionPrefix, r.NewMajor, r.NewMinor, r.NewPatch); err != nil {
+						return warnings, err
+					}
 					if r.NewMajor > r.LatestMajor && r.NewMajor > 1 {
-						warnf("Module path will require new version suffix /v%d", r.NewMajor)
+						if err := warnf("Module path will require new version suffix /v%d", r.NewMajor); err != nil {
+							return warnings, err
+						}
 					}
 				}
 			}
 		}
 	} else {
-		warnf("No version tags")
+		if err := warnf("No version tags"); err != nil {
+			return warnings, err
+		}
 	}
 
 	if r.ModpathMismatch {
-		warnf("Module path %s does not agree with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
+		if err := warnf("Module path %s does not agree with module subdir in repository %s", r.Modpath, r.ModuleSubdir); err != nil {
+			return warnings, err
+		}
 	} else if r.ModuleSubdir != "" {
-		okf("Module path %s agrees with module subdir in repository %s", r.Modpath, r.ModuleSubdir)
+		if err := okf("Module path %s agrees with module subdir in repository %s", r.Modpath, r.ModuleSubdir); err != nil {
+			return warnings, err
+		}
 	}
 
-	return warnings
+	return warnings, nil
 }
 
-func showf(w io.Writer, prefix, format string, args ...interface{}) {
-	fmt.Fprint(w, prefix)
-	fmt.Fprint(w, " ")
-	fmt.Fprintf(w, format, args...)
-	fmt.Fprintln(w)
+func showf(w io.Writer, prefix, format string, args ...interface{}) error {
+	if _, err := fmt.Fprint(w, prefix); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprint(w, " "); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, format, args...); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
+		return err
+	}
+	return nil
 }
