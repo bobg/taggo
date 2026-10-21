@@ -10,7 +10,7 @@ import (
 	"github.com/bobg/errors"
 )
 
-func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) error) (err error) {
+func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) error) error {
 	cmd := exec.CommandContext(ctx, git, "show-ref")
 	cmd.Dir = dir
 	stdout, err := cmd.StdoutPipe()
@@ -20,10 +20,7 @@ func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) err
 	if err := cmd.Start(); err != nil {
 		return errors.Wrapf(err, "starting %s", cmd)
 	}
-	defer func() {
-		err2 := cmd.Wait()
-		err = errors.Join(err, errors.Wrapf(err2, "waiting for %s", cmd))
-	}()
+	defer cmd.Wait() //nolint:errcheck
 
 	sc := bufio.NewScanner(stdout)
 	for sc.Scan() {

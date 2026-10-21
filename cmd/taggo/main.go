@@ -315,7 +315,7 @@ func checkClean(ctx context.Context, git, repodir string) error {
 	if err := cmd.Start(); err != nil {
 		return errors.Wrapf(err, "starting %s", cmd)
 	}
-	defer cmd.Wait()
+	defer cmd.Wait() //nolint:errcheck
 
 	var (
 		clean = true
