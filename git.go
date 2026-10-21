@@ -20,7 +20,7 @@ func gitRefs(ctx context.Context, git, dir string, f func(name, hash string) err
 	if err := cmd.Start(); err != nil {
 		return errors.Wrapf(err, "starting %s", cmd)
 	}
-	defer cmd.Wait()
+	defer cmd.Wait() //nolint:errcheck
 
 	sc := bufio.NewScanner(stdout)
 	for sc.Scan() {

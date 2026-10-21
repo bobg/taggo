@@ -53,7 +53,7 @@ func TestCheckAll(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer f.Close()
+			defer f.Close() //nolint:errcheck
 
 			var (
 				want []taggo.Result
@@ -67,7 +67,7 @@ func TestCheckAll(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.RemoveAll(tmpdir)
+			defer os.RemoveAll(tmpdir) //nolint:errcheck
 
 			bundlePath := filepath.Join(testPath, "bundle")
 			cmd := exec.Command("git", "clone", "-c", "init.defaultBranch=main", bundlePath, tmpdir)
@@ -95,7 +95,7 @@ func TestCheckAll(t *testing.T) {
 				}
 
 				var desc bytes.Buffer
-				result.Describe(&desc, false)
+				result.Describe(&desc, false) //nolint:errcheck
 
 				want, err := os.ReadFile(goldenFile)
 				if err != nil {
